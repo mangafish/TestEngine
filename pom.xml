@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>TestProject</groupId>
   <artifactId>TestProject</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>2.3.2</version>
   <build>
     <sourceDirectory>src/pages</sourceDirectory>
     <testSourceDirectory>src/tests</testSourceDirectory>
@@ -19,14 +19,15 @@
 	    <!-- Build an executable JAR -->
 	    <groupId>org.apache.maven.plugins</groupId>
 	    <artifactId>maven-jar-plugin</artifactId>
+	    <version>2.4</version>
 	    <configuration>
-	    <archive>
-	      <manifest>
-	      <addClasspath>true</addClasspath>
-	      <classpathPrefix>lib/</classpathPrefix>
-	          <mainClass>com.gravitant.tests.RunTests</mainClass>
-	      </manifest>
-	    </archive>
+		    <archive>
+		      <manifest>
+		      <addClasspath>true</addClasspath>
+		      <classpathPrefix>lib/</classpathPrefix>
+		          <mainClass>com.gravitant.tests.RunTests</mainClass>
+		      </manifest>
+		    </archive>
 	     </configuration>
 	    </plugin>
     </plugins>
@@ -35,33 +36,61 @@
   	<dependency>
   		<groupId>org.seleniumhq.selenium</groupId>
   		<artifactId>selenium-java</artifactId>
-  		<version>2.37.1</version>
   	</dependency>
   	<dependency>
  		<groupId>org.testng</groupId>
   		<artifactId>testng</artifactId>
-  		<version>6.8.7</version>
       	<scope>test</scope>
 	</dependency>
 	<dependency> 
   		<groupId>org.slf4j</groupId>
   		<artifactId>slf4j-log4j12</artifactId>
-  		<version>1.7.5</version>
 	</dependency>
 	<dependency>
   		<groupId>xml-apis</groupId>
   		<artifactId>xml-apis</artifactId>
- 		<version>1.4.01</version>
 	</dependency>
 	<dependency>
 		<groupId>org.apache.poi</groupId>
 		<artifactId>poi</artifactId>
-		<version>3.10-beta2</version>
 	</dependency>            
 	<dependency>
 		<groupId>org.apache.poi</groupId>
 		<artifactId>poi-ooxml</artifactId>
-		<version>3.10-beta2</version>
 	</dependency>                     
   </dependencies>
+  <dependencyManagement>
+  	<dependencies>
+  		<dependency>
+  			<groupId>org.seleniumhq.selenium</groupId>
+  			<artifactId>selenium-java</artifactId>
+  			<version>2.37.1</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.testng</groupId>
+  			<artifactId>testng</artifactId>
+  			<version>6.8.7</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.slf4j</groupId>
+  			<artifactId>slf4j-log4j12</artifactId>
+  			<version>1.7.5</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>xml-apis</groupId>
+  			<artifactId>xml-apis</artifactId>
+  			<version>1.4.01</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.apache.poi</groupId>
+  			<artifactId>poi</artifactId>
+  			<version>3.10-beta2</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.apache.poi</groupId>
+  			<artifactId>poi-ooxml</artifactId>
+  			<version>3.10-beta2</version>
+  		</dependency>
+  	</dependencies>
+  </dependencyManagement>
 </project>

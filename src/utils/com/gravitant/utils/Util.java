@@ -1,6 +1,7 @@
 package com.gravitant.utils;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -170,16 +171,36 @@ public class Util{
 				DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
 				capabilities.setCapability(InternetExplorerDriver.INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
 				capabilities.setCapability(InternetExplorerDriver.IGNORE_ZOOM_SETTING, true);
-				File path = new File(getClass().getResource("/com/gravitant/utils/IEDriverServer.exe").toURI());
-				System.out.println(path.getCanonicalPath());
-				System.setProperty("webdriver.ie.driver",path.getAbsolutePath());
+				File getIEDriver = new File(getClass().getResource("/com/gravitant/utils/IEDriverServer.exe").toURI());
+				//URL getIEDriver = getClass().getResource("/com/gravitant/utils/IEDriverServer.exe");
+				System.out.println("Browser path: " + getIEDriver.getAbsolutePath());
+				System.setProperty("webdriver.ie.driver", getIEDriver.getAbsolutePath());
 				driver = new InternetExplorerDriver(capabilities);
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				if(driver.getCurrentUrl().toString().equals("about:blank")){
+					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
 				break;
 			case "chrome":
+				File pathToChromeDriver = new File(getClass().getResource("/com/gravitant/utils/chromedriver.exe").toURI());
+				System.out.println(pathToChromeDriver.getCanonicalPath());
+				System.setProperty("webdriver.chrome.driver", pathToChromeDriver.getAbsolutePath());
 				driver = new ChromeDriver();
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				if(driver.getCurrentUrl().toString().equals("about:blank")){
+					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
 				break;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 			default:
+				System.setProperty("webdriver.firefox.bin",browserPath);
 				driver = new FirefoxDriver();
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				if(driver.getCurrentUrl().toString().equals("about:blank")){
+					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
 				break;
 			}
 			return driver;
