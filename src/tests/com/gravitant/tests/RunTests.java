@@ -1,25 +1,15 @@
 package com.gravitant.tests;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.openqa.selenium.WebDriver;
-
 import com.gravitant.utils.XL_Reader;
 import com.gravitant.utils.Util;
+import org.apache.log4j.Logger;
 
 public class RunTests{
+	static Logger APPLICATION_LOGS = Logger.getLogger(RunTests.class);
+	//Logger APPLICATION_LOGS = Logger.getLogger(getClass().getName());
 	public int currentTestCaseID;
 	public String currentTestSuite;
 	public int currentTestStepRow;
@@ -48,6 +38,9 @@ public class RunTests{
 		for(int currentRow=2; currentRow<=rowCountTestCases; currentRow++){
 			if(suiteXLS.getCellData("Test_Cases", "Runmode", currentRow).equals("Y")){
 				String testCaseId = suiteXLS.getCellData("Test_Cases", "TCID", currentRow).trim().toString();
+				String testCaseName = suiteXLS.getCellData("Test_Cases", "Test_Case", currentRow).trim().toString();
+				APPLICATION_LOGS.info("-----------------------------------------------------------------------------");
+				APPLICATION_LOGS.info("Starting Test Case: " + testCaseName);
 				for(int testStepNo=2; testStepNo<=rowCountTestSteps;testStepNo++){
 					if(testCaseId.equals(suiteXLS.getCellData("Test_Steps", "TCID", testStepNo).trim())){
 						getUtils.currentTestStepRow= testStepNo;

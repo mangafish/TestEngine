@@ -32,7 +32,7 @@ import com.thoughtworks.selenium.Selenium;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 
-import static com.gravitant.utils.BrowserEnum.*;
+import static com.gravitant.utils.BrowserType.*;
 
 public class TestSetup{		
 	public static WebDriver driver;

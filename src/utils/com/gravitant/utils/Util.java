@@ -1,34 +1,18 @@
 package com.gravitant.utils;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.By.ById;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.remote.Augmenter;
 import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.How;
-import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedCondition;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import com.google.common.base.Predicate;
-import com.gravitant.tests.RunTests;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,19 +22,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.gravitant.tests.RunTests;
+
 public class Util{
+	static Logger APPLICATION_LOGS = Logger.getLogger("devpinoyLogger");
 	RunTests runTest = new RunTests();
 	public  WebDriver driver;
 	public  int currentTestStepRow;
@@ -59,7 +42,6 @@ public class Util{
 	private  SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
 	private  String currentTime = dateFormat.format(cal.getTime()).replaceAll(":","-");
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
-	
 	
 	/*public Util(WebDriver driver, String path) {
 		this.driver = driver;
@@ -153,19 +135,20 @@ public class Util{
 				break;
 		}
 	}
-	public   WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
+	public  WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
 		browserName = browserName.toLowerCase();
 		System.out.println(browserName);
 		String browserPath = getBrowserPath(browserName);
 		switch (browserName){
 			case "firefox":
-				System.setProperty("webdriver.firefox.bin",browserPath);
+				System.setProperty("webdriver.firefox.bin", browserPath );
 				driver = new FirefoxDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
 				if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				APPLICATION_LOGS.debug("Launching Firefox");
 				break;
 			case "ie":
 				DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
@@ -181,6 +164,7 @@ public class Util{
 				if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				APPLICATION_LOGS.debug("Launching Internet Explorer");
 				break;
 			case "chrome":
 				File pathToChromeDriver = new File(getClass().getResource("/com/gravitant/utils/chromedriver.exe").toURI());
@@ -192,9 +176,10 @@ public class Util{
 				if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				APPLICATION_LOGS.debug("Chrome");
 				break;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 			default:
-				System.setProperty("webdriver.firefox.bin",browserPath);
+				System.setProperty("webdriver.firefox.bin", browserPath);
 				driver = new FirefoxDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
@@ -210,8 +195,10 @@ public class Util{
 		String Url = null;
 		if(environment.equals("QA1")){
 			Url = "https://qa1.mygravitant.com";
+			APPLICATION_LOGS.debug("Navigating to QA1");
 		}else if(environment.equals("QA2")){
 			Url = "https://qa2.mygravitant.com";
+			APPLICATION_LOGS.debug("Navigating to QA2");
 		}
 		return Url;
 	}
@@ -368,7 +355,6 @@ public class Util{
 			browserName = browserName.toLowerCase() + ".exe";
 			File root = new File("c:\\");
 	        File[] list = root.listFiles();
-	       
 	        for (File f : list) {
 	            if (f.isDirectory() && f!=null){
 	            	File[] filesInFolder = f.listFiles();
