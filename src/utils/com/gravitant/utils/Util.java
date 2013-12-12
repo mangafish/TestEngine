@@ -39,24 +39,30 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.gravitant.utils.CSV_Reader;
 import com.gravitant.tests.RunTests;
 
-public class Util{
+public class Util extends CSV_Reader{
 	static Logger LOGS =  Logger.getLogger(Util.class);
 	RunTests runTest = new RunTests();
 	public  WebDriver driver;
 	public  int currentTestStepRow;
-	private  CSVReader testCase = new CSVReader(null);
+	public  CSV_Reader testCase = new CSV_Reader();
 	private XL_Reader objectId;
 	private  Calendar cal = Calendar.getInstance();
 	private  SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
 	private  String currentTime = dateFormat.format(cal.getTime()).replaceAll(":","-");
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 	
-	/*public Util(WebDriver driver, String path) {
-		this.driver = driver;
-		//path = this.path;
-	}*/
+	public Util() throws IOException {
+		super();
+	}
+	
+	/**Method gets the list of all tests specified in
+	 * Tests_To_Run.txt
+	 * @return ArrayList of tests to run
+	 * @throws IOException
+	 */
 	public List<String> getTestsToRun() throws IOException{
 		BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(runTest.testsToRun));
 		String currentline = null;
@@ -68,84 +74,87 @@ public class Util{
 	    readTestsToRunFile.close();
 		return testsToRun;
 	}
-	public boolean verifyTestCaseExists(String testName){
+	/**Method gets the list of all files in
+	 * Object_Map folder
+	 * @return ArrayList of files in Object_Map folder
+	 * @throws IOException
+	 */
+	public List<String> getObjectMapFiles() throws IOException{
+		BufferedReader readObjectMapFolder = new BufferedReader(new FileReader(runTest.objectMapsList));
+		String currentline = null;
+		List<String> testsToRun = new ArrayList<>();
+	    while((currentline = readTestsToRunFile.readLine()) != null) {
+	    	//System.out.println(currentline);
+	    	testsToRun.add(currentline);
+	    }
+	    readTestsToRunFile.close();
+		return testsToRun;
+	}
+	/**
+	 * Method verifies the test case listed in Tests_To_Run.txt exists in
+	 * the Test_Cases folder.
+	 * @param testName
+	 * @return boolean
+	 */
+	public String verifyTestCaseExists(String testName){
+		boolean testCaseExists = false;
+		String testCasepath = null;
 		for (int i=0; i<=runTest.testCasesList.length-1; i++) {
-    		String testCaseName = runTest.testCasesList[i].getName(); 
-    		testCasePath= testCasesList[i].getAbsolutePath();
-           	if(testCaseName.equals(testCaseName)){
-           		
+    		String testCaseName = runTest.testCasesList[i].getName();
+    		testCasepath = runTest.testCasesList[i].getPath();
+           	if(testCaseName.equals(testName + ".csv")){
+           		testCaseExists = true;
+           		break;
+           	}else{
+           		testCaseExists = false;
            	}
 		}
-		return false;
-	}
-	public String getAction(String testName){
-		testName  = testName + ".csv";
-		File[] testCasesList = runTest.testCasesList;
-		for (int i=0; i<=testCasesList.length-1;i++){
-			if(testName.equals(testCasesList[i].getName())){
-				//System.out.println(testCasesList[i].getName());
-				
-			}
+		if(!testCaseExists){
+			LOGS.info("Test Case: " + testName + " does not exist");
 		}
-		return currentTime;
+		//System.out.println(testCasepath);
+		return testCasepath;
 	}
-	public int getNoOfSteps(String testcaseName){
-		testCase = testcaseName
-		return currentTestStepRow;
+	/**
+	 * Method reads the Action column in the test case CSV file and
+	 * returns the action to be performed
+	 * @param testCaseName
+	 * @return the Action
+	 * @throws IOException 
+	 */
+	public ArrayList<String> getActions(String testCaseName) throws IOException{
+		ArrayList<String> actions = testCase.getColumnData(testCaseName, "Action");
+		return actions;
 	}
-	public String getPath(){
-		String path =  getClass().getClassLoader().getResource(".").getPath().toString();
-		return path;
+	/**
+	 * Method reads the 'Page' column in the test case CSV file and
+	 * returns the filename in Object_Map folder where the object's properties are stored.
+	 * @param testCaseName
+	 * @return object map filename
+	 * @throws IOException 
+	 */
+	public ArrayList<String> getObjectMapFilename(String testCaseName) throws IOException{
+		ArrayList<String> objectMapFilename = testCase.getColumnData(testCaseName, "Page");
+		return objectMapFilename;
 	}
-	public  By findObject(String objectLocatorType, String locator) {
-		//switch (How.valueOf(objectLocatorType.toUpperCase())) {
-		switch (objectLocatorType.toUpperCase()) {
-			case "CLASS_NAME":
-				return By.className(locator);
-			case "CSS":
-				return By.cssSelector(locator);
-			case "ID":
-				return By.id(locator);
-			case "LINK_TEXT":
-				return By.linkText(locator);
-			case "NAME":
-				return By.name(locator);
-			case "PARTIAL_LINK_TEXT":
-				return By.partialLinkText(locator);
-			case "TAG_NAME":
-				return By.tagName(locator);
-			case "XPATH":
-				return By.xpath(locator);
-			default:
-				throw new IllegalArgumentException(
-						"Cannot determine how to locate element " + locator);
-			}
-		}
+	/**
+	 * Method reads the Object column in the test case CSV file and
+	 * returns the object on which an action is to be performed
+	 * @param testCaseName
+	 * @return the Object
+	 * @throws IOException 
+	 */
+	public ArrayList<String> getObjectIds(String testCaseName) throws IOException{
+		ArrayList<String> objectId = testCase.getColumnData(testCaseName, "Object");
+		return objectId;
+	}
 	
-	public  void executeAction(CSV_Reader action) throws Exception{
-		int rowCountTestSteps = testCase.getRowCount("Action");
-		System.out.println(rowCountTestSteps);
-		/*switch (keyword.toLowerCase()){
-			case "openbrowser":
-				launchBrowser(testData);
-				break;
-			case "navigate":
-				String navigateToUrl = navigateToUrl(testData).toString();
-				driver.navigate().to(navigateToUrl);
-				String currentUrl = driver.getCurrentUrl().substring(0, (driver.getCurrentUrl().length()-1));
-				if(currentUrl.equals(navigateToUrl)){
-					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
-				break;
-			case "verifypagetitle":
-				if(driver.getTitle() !=null && driver.getTitle().equals(testData)){
-					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
-				break;
+	public  void executeAction(String action, String page, String object) throws Exception{
+		switch (action.toLowerCase()){
 			case "clickbutton":
 				clickButton(objectLocatorType, objectLocator);
 				break;
-			case "typeinput":
+			/*case "typeinput":
 				enterText(objectLocatorType, objectLocator, testData);
 				break;
 			case "clicklink":
@@ -175,8 +184,39 @@ public class Util{
 			case "savescreenshot":
 				captureScreen();
 				break;*/
+	}
+	public void clickButton(String objectLocatorType, String locator){
+		driver.findElement(findObject(objectLocatorType, locator)).click();
+		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
+	}	
+	public String getPath(){
+		String path =  getClass().getClassLoader().getResource(".").getPath().toString();
+		return path;
+	}
+	public  By findObject(String objectLocatorType, String locator) {
+		//switch (How.valueOf(objectLocatorType.toUpperCase())) {
+		switch (objectLocatorType.toUpperCase()) {
+			case "CLASS_NAME":
+				return By.className(locator);
+			case "CSS":
+				return By.cssSelector(locator);
+			case "ID":
+				return By.id(locator);
+			case "LINK_TEXT":
+				return By.linkText(locator);
+			case "NAME":
+				return By.name(locator);
+			case "PARTIAL_LINK_TEXT":
+				return By.partialLinkText(locator);
+			case "TAG_NAME":
+				return By.tagName(locator);
+			case "XPATH":
+				return By.xpath(locator);
+			default:
+				throw new IllegalArgumentException(
+						"Cannot determine how to locate element " + locator);
+			}
 		}
-	
 	/*public  WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
 		browserName = browserName.toLowerCase();
 		System.out.println(browserName);
@@ -233,7 +273,7 @@ public class Util{
 			return driver;
 	}*/
 	
-	public   String navigateToUrl(String environment) throws MalformedURLException{
+	public  String navigateToUrl(String environment) throws MalformedURLException{
 		String Url = null;
 		if(environment.equals("QA1")){
 			Url = "https://qa1.mygravitant.com";
@@ -247,11 +287,8 @@ public class Util{
 	public  void verifyPageTitle(String pageTitle){
 		
 	}
-	/*public   void clickButton(String objectLocatorType, String locator){
-		driver.findElement(findObject(objectLocatorType, locator)).click();
-		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
-	}
-	public   void clickLink(String objectLocatorType, String locator){
+	
+	/*public   void clickLink(String objectLocatorType, String locator){
 		driver.findElement(findObject(objectLocatorType, locator)).click();
 		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
 	}

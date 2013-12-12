@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Scanner;
@@ -43,14 +44,34 @@ public class RunTests{
 		test.start();
 	}
 	public void start() throws Exception{
-		Util getUtil = new Util();
+		Util util = new Util();
+		ArrayList<String> actions = new ArrayList<String>();
+		ArrayList<String> objectMapFileNames = new ArrayList<String>();
+		ArrayList<String> objectIds = new ArrayList<String>();
 		//Get test cases to run from TestsToRun.txt
-		//listOfTests = getUtil.getTestsToRun();
-		for(int i=0; i<=getUtil.getTestsToRun().size()-1; i++){
-			String currentTest = getUtil.getTestsToRun().get(i);
-			//System.out.println(currentTest);
-			getUtil.getAction(currentTest);
+		for(int i=0; i<=util.getTestsToRun().size()-1; i++){
+			String currentTest = util.getTestsToRun().get(i);
+			if(!util.verifyTestCaseExists(currentTest).equals(null)){
+				String currentTestPath = util.verifyTestCaseExists(currentTest);
+				actions = util.getActions(currentTestPath);
+				objectMapFileNames = util.getObjectMapFilename(currentTestPath);
+				objectIds = util.getObjectIds(currentTestPath);
+				//System.out.println(actions.toString());
+				//System.out.println(objectMapFileName.toString());
+				//System.out.println(objectId.toString());
+				for(int j=0; j<objectMapFileNames.size(); j++){
+					String objectMapFileName = objectMapFileNames.get(j) + ".csv";
+					//System.out.println(objectMapFileName);
+					for(int k=0;k<objectMapsList.length;k++){
+						//System.out.println(objectMapsList[k].getName());
+						if(objectMapsList[k].getName().equals(objectMapFileName)){
+							System.out.println(objectMapFileName);
+						}
+					}
+				}
+			}
 		}
+		//System.out.println(Arrays.toString(objectMapsList));
 		/*BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(testsToRun));
         String currentline = null;
         while((currentline = readTestsToRunFile.readLine()) != null) {
