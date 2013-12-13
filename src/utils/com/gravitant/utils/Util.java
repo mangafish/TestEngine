@@ -47,7 +47,7 @@ public class Util extends CSV_Reader{
 	RunTests runTest = new RunTests();
 	public  WebDriver driver;
 	public  int currentTestStepRow;
-	public  CSV_Reader testCase = new CSV_Reader();
+	//public  CSV_Reader testCase = new CSV_Reader();
 	private XL_Reader objectId;
 	private  Calendar cal = Calendar.getInstance();
 	private  SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
@@ -58,6 +58,26 @@ public class Util extends CSV_Reader{
 		super();
 	}
 	
+	/**Method gets the value for the specified property from 
+	 * Test_Config.txt
+	 * @return String property value
+	 * @throws IOException
+	 */
+	public String getTestConfigProperty(String property) throws IOException{
+		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(runTest.testConfigFilePath));
+		String currentline = null;
+		String propertyValue = null;
+	    while((currentline = readTestConfigFile.readLine()) != null) {
+	    	if(currentline.contains(property)){
+	    		String[] split = currentline.split("=");
+	    		propertyValue = split[1];
+	    		break;
+	    	}
+	    }
+		//System.out.println(propertyValue);
+	    readTestConfigFile.close();
+		return propertyValue;
+	}
 	/**Method gets the list of all tests specified in
 	 * Tests_To_Run.txt
 	 * @return ArrayList of tests to run
@@ -65,22 +85,6 @@ public class Util extends CSV_Reader{
 	 */
 	public List<String> getTestsToRun() throws IOException{
 		BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(runTest.testsToRun));
-		String currentline = null;
-		List<String> testsToRun = new ArrayList<>();
-	    while((currentline = readTestsToRunFile.readLine()) != null) {
-	    	//System.out.println(currentline);
-	    	testsToRun.add(currentline);
-	    }
-	    readTestsToRunFile.close();
-		return testsToRun;
-	}
-	/**Method gets the list of all files in
-	 * Object_Map folder
-	 * @return ArrayList of files in Object_Map folder
-	 * @throws IOException
-	 */
-	public List<String> getObjectMapFiles() throws IOException{
-		BufferedReader readObjectMapFolder = new BufferedReader(new FileReader(runTest.objectMapsList));
 		String currentline = null;
 		List<String> testsToRun = new ArrayList<>();
 	    while((currentline = readTestsToRunFile.readLine()) != null) {
@@ -116,16 +120,30 @@ public class Util extends CSV_Reader{
 		return testCasepath;
 	}
 	/**
+	 * Method returns path to the test case in Tests_Cases folder
+	 * @param testName
+	 * @return String path to test case.
+	 */
+	public String getTestCasePath(String testName){
+		String testCasepath = null;
+		for (int i=0; i<=runTest.testCasesList.length-1; i++) {
+    		testCasepath = runTest.testCasesList[i].getPath();
+    		//System.out.println(testCasepath);
+		}
+		//System.out.println(testCasepath);
+		return testCasepath;
+	}
+	/**
 	 * Method reads the Action column in the test case CSV file and
 	 * returns the action to be performed
 	 * @param testCaseName
 	 * @return the Action
 	 * @throws IOException 
 	 */
-	public ArrayList<String> getActions(String testCaseName) throws IOException{
+	/*public ArrayList<String> getActions(String testCaseName) throws IOException{
 		ArrayList<String> actions = testCase.getColumnData(testCaseName, "Action");
 		return actions;
-	}
+	}*/
 	/**
 	 * Method reads the 'Page' column in the test case CSV file and
 	 * returns the filename in Object_Map folder where the object's properties are stored.
@@ -133,9 +151,51 @@ public class Util extends CSV_Reader{
 	 * @return object map filename
 	 * @throws IOException 
 	 */
-	public ArrayList<String> getObjectMapFilename(String testCaseName) throws IOException{
+	/*public ArrayList<String> getObjectMapFilenames(String testCaseName) throws IOException{
 		ArrayList<String> objectMapFilename = testCase.getColumnData(testCaseName, "Page");
 		return objectMapFilename;
+	}*/
+	/**
+	 * Method reads the 'Page' column in the test case CSV file and
+	 * returns the filename in Object_Map folder where the object's properties are stored.
+	 * @param page ame
+	 * @return object map filename
+	 * @throws IOException 
+	 */
+	public String getObjectMapFilePath(String pageName) throws IOException{
+		String objectMapFilePath = null;
+		for (int i=0; i<=runTest.objectMapsList.length-1; i++) {
+			String objectMapFileName = runTest.objectMapsList[i].getName();
+			//System.out.println(objectMapFileName);
+			if(objectMapFileName.equals(pageName + ".csv")){
+				objectMapFilePath = runTest.objectMapsList[i].getPath();
+				//System.out.println(objectMapFilePath);
+				break;
+			}
+		}
+		//System.out.println(objectMapFilePath);
+		return objectMapFilePath;
+	}
+	/**
+	 * Method reads the 'Page' column in the test case CSV file and
+	 * returns the filename in Test_Data folder where the page's test data is stored.
+	 * @param page name
+	 * @return test data filename
+	 * @throws IOException 
+	 */
+	public String getTestDataFilePath(String pageName) throws IOException{
+		String testDataFilePath = null;
+		for (int i=0; i<=runTest.testDataFilesList.length-1; i++) {
+			String testDataFileName = runTest.testDataFilesList[i].getName();
+			//System.out.println(objectMapFileName);
+			if(testDataFileName.equals("Data_" +pageName + ".csv")){
+				testDataFilePath = runTest.testDataFilesList[i].getPath();
+				//System.out.println(testDataFilePath);
+				break;
+			}
+		}
+		//System.out.println(objectMapFilePath);
+		return testDataFilePath;
 	}
 	/**
 	 * Method reads the Object column in the test case CSV file and
@@ -144,27 +204,41 @@ public class Util extends CSV_Reader{
 	 * @return the Object
 	 * @throws IOException 
 	 */
-	public ArrayList<String> getObjectIds(String testCaseName) throws IOException{
+	/*public ArrayList<String> getObjectIds(String testCaseName) throws IOException{
 		ArrayList<String> objectId = testCase.getColumnData(testCaseName, "Object");
 		return objectId;
+	}*/
+	public String findObjectMapFile(ArrayList<String> objectMapFileNames, File[] objectMapsList ){
+		String objectMapFileName = null;
+		for(int j=0; j<objectMapFileNames.size(); j++){
+			objectMapFileName = objectMapFileNames.get(j) + ".csv";
+			//System.out.println(objectMapFileName);
+			for(int k=0;k<objectMapsList.length;k++){
+				//System.out.println(objectMapsList[k].getName());
+				if(objectMapsList[k].getName().equals(objectMapFileName)){
+					System.out.println(objectMapFileName);
+					break;
+				}
+			}
+		}
+		return objectMapFileName;
 	}
-	
-	public  void executeAction(String action, String page, String object) throws Exception{
-		switch (action.toLowerCase()){
+	public  void executeAction(String objectName, String action, String objectLocatorType, String locatorValue, String testData) throws Exception{
+		switch(action.toLowerCase()){
 			case "clickbutton":
-				clickButton(objectLocatorType, objectLocator);
+				clickButton(objectLocatorType, locatorValue);
 				break;
 			/*case "typeinput":
-				enterText(objectLocatorType, objectLocator, testData);
+				enterText(objectLocatorType, objectName, testData);
 				break;
 			case "clicklink":
-				clickLink(objectLocatorType, objectLocator);
+				clickLink(objectLocatorType, objectName);
 				break;
 			case "selectlistitem":
-				selectListItem(objectLocatorType, objectLocator, testData);
+				selectListItem(objectLocatorType, objectName, testData);
 				break;
 			case "selectradiobuttonitem":
-				selectRadioButtonItem(objectLocatorType, objectLocator, testData);
+				selectRadioButtonItem(objectLocatorType, objectName, testData);
 				break;
 			case "switchtopopup":
 				switchToPopup();
@@ -179,45 +253,45 @@ public class Util extends CSV_Reader{
 				waitForObject(testData);
 				break;
 			case "scrolldown":
-				scrollDown(objectLocatorType, objectLocator);
+				scrollDown(objectLocatorType, objectName);
 				break;
 			case "savescreenshot":
 				captureScreen();
 				break;*/
+		}
 	}
-	public void clickButton(String objectLocatorType, String locator){
-		driver.findElement(findObject(objectLocatorType, locator)).click();
-		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
+	public void clickButton(String objectLocatorType, String locatorValue){
+		driver.findElement(findObject(objectLocatorType, locatorValue)).click();
 	}	
 	public String getPath(){
 		String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 		return path;
 	}
-	public  By findObject(String objectLocatorType, String locator) {
+	public  By findObject(String objectLocatorType, String locatorValue) {
 		//switch (How.valueOf(objectLocatorType.toUpperCase())) {
 		switch (objectLocatorType.toUpperCase()) {
 			case "CLASS_NAME":
-				return By.className(locator);
+				return By.className(locatorValue);
 			case "CSS":
-				return By.cssSelector(locator);
+				return By.cssSelector(locatorValue);
 			case "ID":
-				return By.id(locator);
+				return By.id(locatorValue);
 			case "LINK_TEXT":
-				return By.linkText(locator);
+				return By.linkText(locatorValue);
 			case "NAME":
-				return By.name(locator);
+				return By.name(locatorValue);
 			case "PARTIAL_LINK_TEXT":
-				return By.partialLinkText(locator);
+				return By.partialLinkText(locatorValue);
 			case "TAG_NAME":
-				return By.tagName(locator);
+				return By.tagName(locatorValue);
 			case "XPATH":
-				return By.xpath(locator);
+				return By.xpath(locatorValue);
 			default:
 				throw new IllegalArgumentException(
-						"Cannot determine how to locate element " + locator);
+						"Cannot determine how to locate element " + locatorValue);
 			}
 		}
-	/*public  WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
+	public  WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
 		browserName = browserName.toLowerCase();
 		System.out.println(browserName);
 		String browserPath = getBrowserPath(browserName);
@@ -227,9 +301,9 @@ public class Util extends CSV_Reader{
 				driver = new FirefoxDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
-				if(driver.getCurrentUrl().toString().equals("about:blank")){
+				/*if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
 				LOGS.debug("Launching Firefox");
 				break;
 			case "ie":
@@ -243,9 +317,9 @@ public class Util extends CSV_Reader{
 				driver = new InternetExplorerDriver(capabilities);
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
-				if(driver.getCurrentUrl().toString().equals("about:blank")){
+				/*if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
 				LOGS.debug("Launching Internet Explorer");
 				break;
 			case "chrome":
@@ -255,9 +329,9 @@ public class Util extends CSV_Reader{
 				driver = new ChromeDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
-				if(driver.getCurrentUrl().toString().equals("about:blank")){
+				/*if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
 				LOGS.debug("Chrome");
 				break;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 			default:
@@ -265,13 +339,13 @@ public class Util extends CSV_Reader{
 				driver = new FirefoxDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
-				if(driver.getCurrentUrl().toString().equals("about:blank")){
+				/*if(driver.getCurrentUrl().toString().equals("about:blank")){
 					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
+				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
 				break;
 			}
 			return driver;
-	}*/
+	}
 	
 	public  String navigateToUrl(String environment) throws MalformedURLException{
 		String Url = null;
@@ -282,28 +356,29 @@ public class Util extends CSV_Reader{
 			Url = "https://qa2.mygravitant.com";
 			LOGS.debug("Navigating to QA2");
 		}
+		driver.navigate().to(Url);
 		return Url;
 	}
 	public  void verifyPageTitle(String pageTitle){
 		
 	}
 	
-	/*public   void clickLink(String objectLocatorType, String locator){
-		driver.findElement(findObject(objectLocatorType, locator)).click();
+	/*public   void clickLink(String objectLocatorType, String locatorValue){
+		driver.findElement(findObject(objectLocatorType, locatorValue)).click();
 		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
 	}
 	public  void clickLink(WebDriver driver, WebElement webElement){
 		((JavascriptExecutor)driver).executeScript("arguments[0].click()", webElement);
 	}
-	public   void enterText(String objectLocatorType, String locator, String text){
-		driver.findElement(findObject(objectLocatorType, locator)).sendKeys(text);
-		String enteredText = driver.findElement(findObject(objectLocatorType, locator)).getAttribute("value");
+	public   void enterText(String objectLocatorType, String locatorValue, String text){
+		driver.findElement(findObject(objectLocatorType, locatorValue)).sendKeys(text);
+		String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
 		if(enteredText.equals(text)){
 			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
 	}
-	public   void selectListItem(String objectLocatorType, String locator, String itemToSelect){
-		Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locator)));
+	public   void selectListItem(String objectLocatorType, String locatorValue, String itemToSelect){
+		Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
 		selectBox.selectByVisibleText(itemToSelect);
 		String selected = selectBox.getFirstSelectedOption().getAttribute("selected");
 		if(selected.equals("true")){
@@ -333,13 +408,13 @@ public class Util extends CSV_Reader{
 			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}
 	}*/
-	/*public    void selectRadioButtonItem(String objectLocatorType, String locator, String testData){
+	/*public    void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData){
 		WebElement radioButton = null;
 		switch(objectLocatorType){
 			case "id":
-				radioButton = driver.findElement(By.id(locator.trim()));
+				radioButton = driver.findElement(By.id(locatorValue.trim()));
 			case "xpath":
-				String locatorwithTestData = locator.replace(locator.substring(16, locator.length()), testData) + "']";
+				String locatorwithTestData = locatorValue.replace(locatorValue.substring(16, locatorValue.length()), testData) + "']";
 				//System.out.println(locatorwithTestData);
 				radioButton = driver.findElement(By.xpath(locatorwithTestData));
 				radioButton.click();
@@ -354,20 +429,20 @@ public class Util extends CSV_Reader{
 		Thread.sleep(seconds *1000);
 		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
 	}*/
-	/*public   void scrollDown(String objectLocatorType, String objectLocator){
+	/*public   void scrollDown(String objectLocatorType, String objectName){
 		JavascriptExecutor jse = (JavascriptExecutor)driver;
 		jse.executeScript("window.scrollBy(0,500)", "");
 		suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "NA");
 	}*/
-	/*public  void checkErrorMessage(String objectLocatorType, String locator, String testData){
-		WebElement errorMessage = driver.findElement(By.xpath(locator.trim()));
+	/*public  void checkErrorMessage(String objectLocatorType, String locatorValue, String testData){
+		WebElement errorMessage = driver.findElement(By.xpath(locatorValue.trim()));
 		if(errorMessage.getText().isEmpty()){
 			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "No error message");
 		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "Message exists");}
 	}*/
-	/*public  void appendText(String objectLocatorType, String locator, String text){
-		driver.findElement(findObject(objectLocatorType, locator)).sendKeys(text);
-		String enteredText = driver.findElement(findObject(objectLocatorType, locator)).getAttribute("value");
+	/*public  void appendText(String objectLocatorType, String locatorValue, String text){
+		driver.findElement(findObject(objectLocatorType, locatorValue)).sendKeys(text);
+		String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
 		if(enteredText.equals(text)){
 			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}

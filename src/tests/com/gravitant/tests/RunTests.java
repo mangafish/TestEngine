@@ -25,14 +25,30 @@ import org.apache.log4j.Logger;
 
 public class RunTests{
 	static Logger LOGS = Logger.getLogger(RunTests.class);
+	public String testConfigFilePath =  "C:\\AutomatedTests\\Test_Config\\Test_Config.txt";
 	public String testsToRun =  "C:\\AutomatedTests\\Tests_To_Run\\TestsToRun.txt";
-	public String currentTestCase;
+	
 	public File testCasesFolder = new File("C:\\AutomatedTests\\Test_Cases");
     public File[] testCasesList = testCasesFolder.listFiles();
+    public String currentTestCase;
+    public String testCasePath;
+    
     public File objectMapFolder = new File("C:\\AutomatedTests\\Object_Map");
     public File[] objectMapsList = objectMapFolder.listFiles();
-    public String testCasePath;
     public String objectMapFilePath;
+    
+    public File testDataFolder = new File("C:\\AutomatedTests\\Test_Data");
+    public File[] testDataFilesList = testDataFolder.listFiles();
+    public String testDataFilePath;
+    
+    public String environment = null;
+    public String browserType = null;
+    public String username = null;
+    public String password = null;
+    public String objectName = null;
+    public String locator_Type = null;
+    public String locator_Value = null;
+    public String testDataFileObjectName = null;
 	/*public String currentDate = FastDateFormat.getInstance("dd-MMM-yyyy").format(System.currentTimeMillis( ));
 	Calendar cal = Calendar.getInstance();
 	SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
@@ -45,30 +61,66 @@ public class RunTests{
 	}
 	public void start() throws Exception{
 		Util util = new Util();
-		ArrayList<String> actions = new ArrayList<String>();
-		ArrayList<String> objectMapFileNames = new ArrayList<String>();
-		ArrayList<String> objectIds = new ArrayList<String>();
+		/*environment = util.getTestConfigProperty("environment");
+		browserType = util.getTestConfigProperty("browserType");
+		username = util.getTestConfigProperty("username");
+		password = util.getTestConfigProperty("password");
+		util.launchBrowser(browserType);
+		util.navigateToUrl(environment);*/
+		String objectMapFileName = null;
+		String testDataFileName = null;
 		//Get test cases to run from TestsToRun.txt
 		for(int i=0; i<=util.getTestsToRun().size()-1; i++){
 			String currentTest = util.getTestsToRun().get(i);
 			if(!util.verifyTestCaseExists(currentTest).equals(null)){
-				String currentTestPath = util.verifyTestCaseExists(currentTest);
-				actions = util.getActions(currentTestPath);
-				objectMapFileNames = util.getObjectMapFilename(currentTestPath);
+				String currentTestPath = util.getTestCasePath(currentTest);
+				//System.out.println(currentTestPath);
+				CSVReader testCaseReader = new CSVReader(new FileReader(currentTestPath));
+			        String [] testStep = null;
+			        String pageName = null;
+			        String objectId = null;
+			        String action = null;
+			        while((testStep = testCaseReader.readNext()) != null) {
+			        	pageName = testStep[2];
+			        	objectId = testStep[3];
+			        	action = testStep[4];
+			        	objectMapFileName = util.getObjectMapFilePath(pageName);
+			        	testDataFileName = util.getTestDataFilePath(pageName);
+			        	//System.out.println(objectMapFileName);
+			        	if(objectMapFileName !=null){
+			        		CSVReader objectMapFileReader = new CSVReader(new FileReader(objectMapFileName));
+					        String [] objectRow = null;
+					        while((objectRow = objectMapFileReader.readNext()) != null) {
+						        objectName = objectRow[0];
+						        locator_Type = objectRow[1];
+						        locator_Value = objectRow[2];
+						        if(testDataFileName !=null){
+						        	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
+							        String [] testDataRow = null;
+							        while((testDataRow = testDataFileReader.readNext()) != null) {
+							        	testDataFileObjectName = testDataRow[0];
+							        	if(!testDataFileObjectName.equals("Object")){
+							        			String testData = testDataRow[1];
+								        		System.out.println(testData);
+							        	}
+							        }
+							        testDataFileReader.close();
+						        }
+					        }
+					        objectMapFileReader .close();	
+			        	}
+			        	/*System.out.println(locator_Type);
+			        	util.executeAction(objectId, action, locator_Type, locator_Value);*/
+			        }
+			        testCaseReader.close();
+				/*objectMapFileNames = util.getObjectMapFilenames(currentTestPath);
 				objectIds = util.getObjectIds(currentTestPath);
+				actions = util.getActions(currentTestPath);
 				//System.out.println(actions.toString());
 				//System.out.println(objectMapFileName.toString());
 				//System.out.println(objectId.toString());
-				for(int j=0; j<objectMapFileNames.size(); j++){
-					String objectMapFileName = objectMapFileNames.get(j) + ".csv";
-					//System.out.println(objectMapFileName);
-					for(int k=0;k<objectMapsList.length;k++){
-						//System.out.println(objectMapsList[k].getName());
-						if(objectMapsList[k].getName().equals(objectMapFileName)){
-							System.out.println(objectMapFileName);
-						}
-					}
-				}
+				//Find the object map file in Object_Map folder
+				util.findObjectMapFile(objectMapFileNames, objectMapsList);*/
 			}
 		}
 		//System.out.println(Arrays.toString(objectMapsList));
