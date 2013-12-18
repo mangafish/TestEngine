@@ -26,7 +26,6 @@ import java.util.List;
 
 public class CSV_Reader{
 	RunTests runTest = new RunTests();
-	public String path = runTest.testCasePath;
 	public String pathToXL = null;
 	public  FileInputStream fileInputStream = null;
 	public  FileOutputStream fileOut =null;
