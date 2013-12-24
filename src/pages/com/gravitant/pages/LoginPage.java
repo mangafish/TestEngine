@@ -1,16 +1,18 @@
 package com.gravitant.pages;
 
+import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.How;
 import org.openqa.selenium.support.PageFactory;
-
 import org.testng.Assert;
 import org.testng.annotations.*;
 
+import com.gravitant.utils.Util;
+
 public class LoginPage {
+	static Logger LOGS =  Logger.getLogger(Util.class);
 	final WebDriver driver;
-	
 	@FindBy(how = How.XPATH, using = "//*[@id='fLogin']/div[2]/div/h3")
 		private WebElement loginText;
 	@FindBy(how = How.ID, using = "username")

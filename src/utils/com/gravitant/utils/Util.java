@@ -57,14 +57,11 @@ public class Util extends CSV_Reader{
 	public  int currentTestStepRow;
 	public File testCasesFolder = new File("C:\\AutomatedTests\\Test_Cases\\");
 	private XL_Reader objectId;
-	private  Calendar cal = Calendar.getInstance();
-	private  SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
-	private  String currentTime = dateFormat.format(cal.getTime()).replaceAll(":","-");
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 	public String locator_Type = null;
     public String locator_Value = null;
-    public String testData = null;
     public String testDataFileObjectName = null;
+    public String[] objectInfo = null;
     public String action = null;
     public String pageName = null;
     public String currentResultFilePath = null;
@@ -72,13 +69,58 @@ public class Util extends CSV_Reader{
     public String currentFilePath = null;
     public String currentFileName = null;
     public String currentTestStepName = null;
+    public int currentTestStepNumber = 0;
     public String currentPageName = null;
     public String currentTestObjectName = null;
+    public String objectMapFileName = null;
+    public String testDataFileName = null;
+    public String testData = null;
+    public ArrayList<String> dataTestData =  new ArrayList<String>();;
+    public String currenDate = null;
+    public String currentTime = null;
     int totalTestNumber = 0;
-    int counter = 0;
+    int failedStepCounter = 0;
+    int failedTestsCounter = 0;
+    int screenshotCounter = 0;
     		
 	public Util() throws IOException {
 		super();
+	}
+	
+	public int getRowCount(List<?> testCaseContent) throws IOException{
+		int numberOfRows = 0;
+		for (Object object : testCaseContent){
+			numberOfRows++;
+		 }
+		return numberOfRows;
+	}
+	
+	public boolean findIfDataTest(List<?> testCaseContent){
+		boolean isDataTest = false;
+		String[] row;
+		int lineNumber = 0;
+		 for (Object object : testCaseContent){
+             row = (String[]) object;
+             System.out.println(row[2]);
+             if(row[4].equals("Begin_DataTest")){
+            	 isDataTest = true;
+             }
+             /*for (int j = 0; j < row.length; j++){
+             	lineNumber++;
+	                System.out.println("Cell column index: " + j);
+	                System.out.println("Cell Value: " + row[j]);
+	                System.out.println("-------------");
+             	if(row[j].equals("Begin_DataTest")){
+             		isDataTest = true;
+             		//System.out.println("Data Test Begins at row: " + lineNumber/5);
+             		//System.out.println(row[j]);
+             	}else{
+             		isDataTest = false;
+             		//System.out.println("Data Test ends at row: " + lineNumber/5);
+             	}
+             }*/
+	     }
+		return isDataTest;
 	}
 	public String setCurrentTestName(String currentTest){
 		currentTestName = currentTest;
@@ -96,6 +138,10 @@ public class Util extends CSV_Reader{
 		currentTestStepName = testStepName;
 		return currentTestStepName;
 	}
+	public int setCurrentTestStepNumber(int stepNumber){
+		currentTestStepNumber = stepNumber;
+		return currentTestStepNumber;
+	}
 	public String setCurrentPageName(String pageName){
 		currentPageName = pageName;
 		return currentPageName;
@@ -104,10 +150,16 @@ public class Util extends CSV_Reader{
 		currentTestObjectName = objectName;
 		return currentTestObjectName;
 	}
-	public int incrementTotalTestNumber(){
+	public void setTotalTestNumber(){
 		totalTestNumber++;
-		return totalTestNumber;
 	}
+	public void setCurrentDate(String currentDate){
+		this.currenDate = currentDate;
+	}
+	public void setCurrentTime(String currentTime){
+		this.currentTime = currentTime;
+	}
+	
 	/**Method gets the value for the specified property from 
 	 * Test_Config.txt
 	 * @return String property value
@@ -174,15 +226,17 @@ public class Util extends CSV_Reader{
 	 * @param testName
 	 * @return String path to test case.
 	 */
-	public String getTestCasePath(String testName){
+	public String getTestCasePath(String testCaseName){
 		String testCasepath = null;
 		//System.out.println(Arrays.toString(runTest.testCasesList));
 		for (int i=0; i<=runTest.testCasesList.length-1; i++) {
-			//System.out.println(runTest.testCasesList[i].getName());
-			if(runTest.testCasesList[i].getName().contains(testName)){
+			String testName = runTest.testCasesList[i].getName();
+			//System.out.println(testName);
+			if(testName.equals(testCaseName + ".csv")){
 				testCasepath = runTest.testCasesList[i].getPath();
+				break;
 			}
-    		//System.out.println(testCasepath);
+			
 		}
 		//System.out.println(testCasepath);
 		return testCasepath;
@@ -225,20 +279,19 @@ public class Util extends CSV_Reader{
 		return objectMapFileName;
 	}
 	
-	public String[] getObjectInfo(String objectMapFileName, String testStepObjectName) throws Exception{
+	public String[] getObjectInfo(String pageName, String objectName) throws Exception{
+		objectMapFileName = this.getObjectMapFilePath(pageName);
 		String[] objectInfo = null;
 		//LOGS.info("--------->Reading Object Map file: " + objectMapFileName);
-		if(!testStepObjectName.equals("")){
-			CSVReader objectMapFileReader = new CSVReader(new FileReader(objectMapFileName));
-	        String [] objectRow = null;
-	        while((objectRow = objectMapFileReader.readNext()) != null) {
-	        	if(!objectRow[0].equals("Object_Name") && objectRow[0].equals(testStepObjectName)){
-	        		objectInfo = objectRow;
-	        		break;
-	        	}
-	        }
-	        objectMapFileReader .close();
-		}
+		CSVReader objectMapFileReader = new CSVReader(new FileReader(objectMapFileName));
+        String [] objectRow = null;
+        while((objectRow = objectMapFileReader.readNext()) != null) {
+        	if(!objectRow[0].equals("Object_Name") && objectRow[0].equals(objectName)){
+        		objectInfo = objectRow;
+        		break;
+        	}
+        }
+        objectMapFileReader .close();
 		return objectInfo;
 	}
 	
@@ -284,39 +337,56 @@ public class Util extends CSV_Reader{
 		return testDataFilePath;
 	}
 	
-	public String getTestData(String testDataFileName, String testStepObjectName) throws Exception{
-		String testDataFileObjectName = null;
-		String testData = null;
-		//LOGS.info("-------------------->Reading Test Data file: " + testDataFileName);
+	public ArrayList<String> getDataTestData(String pageName, String objectName) throws Exception{
+		testDataFileName = this.getTestDataFilePath(pageName);
     	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
-        String [] testDataRow = null;
+        String[] testDataRow = null;
         while((testDataRow = testDataFileReader.readNext()) != null){
         	testDataFileObjectName = testDataRow[0];
-        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(testStepObjectName)){
-    			testData = testDataRow[1];
+        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
+        		for(int i=1;i<testDataRow.length;i++){
+        			System.out.println(testDataRow[i]);
+        			dataTestData.add(testDataRow[i]);
+        		}
+    			break;
+        	}
+        }
+        testDataFileReader.close();
+		return dataTestData;
+	}
+	public String getTestData(String pageName, String objectName) throws Exception{
+		testDataFileName = this.getTestDataFilePath(pageName);
+    	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
+        String[] testDataRow = null;
+        while((testDataRow = testDataFileReader.readNext()) != null){
+        	testDataFileObjectName = testDataRow[0];
+        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
+       			testData = testDataRow[1];
     			break;
         	}
         }
         testDataFileReader.close();
 		return testData;
 	}
-	
-	public  void executeAction(String objectName, String action, String objectLocatorType, String locatorValue, String testData) throws Exception{
+	public  void executeAction(String pageName, String objectName, String action, String testData) throws Exception{
+		objectInfo = this.getObjectInfo(pageName, objectName);
+		locator_Type = this.getObjectLocatorType(objectInfo);
+		locator_Value = this.getObjectLocatorValue(objectInfo);
 		switch(action.toLowerCase()){
 			case "clickbutton":
-				clickButton(objectLocatorType, locatorValue, testData);
+				clickButton(locator_Type, locator_Value, testData);
 				break;
 			case "typeinput":
-				enterText(objectLocatorType, locatorValue, testData);
+				enterText(locator_Type, locator_Value, testData);
 				break;
 			case "clicklink":
-				clickLink(objectLocatorType, locatorValue);
+				clickLink(locator_Type, locator_Value);
 				break;
 			case "selectlistitem":
-				selectListItem(objectLocatorType, locatorValue, testData);
+				selectListItem(locator_Type, locator_Value, testData);
 				break;
 			case "selectradiobuttonitem":
-				selectRadioButtonItem(objectLocatorType, locatorValue, testData);
+				selectRadioButtonItem(locator_Type, locator_Value, testData);
 				break;
 			case "switchtopopup":
 				switchToPopup();
@@ -331,19 +401,68 @@ public class Util extends CSV_Reader{
 				waitForObject(testData);
 				break;
 			case "scrolldown":
-				scrollDown(objectLocatorType, locatorValue);
+				scrollDown(locator_Type, locator_Value);
 				break;
 			case "savescreenshot":
-				captureScreen();
+				captureScreen(pageName);
 				break;
 		}
+	}
+	public void executeDataTest(String pageName, String objectName, String action) throws Exception{
+		objectInfo = this.getObjectInfo(pageName, objectName);
+		locator_Type = this.getObjectLocatorType(objectInfo);
+		locator_Value = this.getObjectLocatorValue(objectInfo);
+		dataTestData = this.getDataTestData(pageName, objectName);
+		for(int i=0; i<dataTestData.size(); i++){
+			testData = dataTestData.get(i);
+		}
+		/*switch(action.toLowerCase()){
+			case "clickbutton":
+				clickButton(locator_Type, locator_Value, testData);
+				break;
+			case "typeinput":
+				enterText(locator_Type, locator_Value, testData);
+				break;
+			case "clicklink":
+				clickLink(locator_Type, locator_Value);
+				break;
+			case "selectlistitem":
+				selectListItem(locator_Type, locator_Value, testData);
+				break;
+			case "selectradiobuttonitem":
+				selectRadioButtonItem(locator_Type, locator_Value, testData);
+				break;
+			case "switchtopopup":
+				switchToPopup();
+				break;
+			case "getmainwindowhandle":
+				getMainWindowHandle();
+				break;
+			case "verifypopupdisplays":
+				verifyPopupDisplays();
+				break;
+			case "wait":
+				waitForObject(testData);
+				break;
+			case "scrolldown":
+				scrollDown(locator_Type, locator_Value);
+				break;
+			case "savescreenshot":
+				captureScreen(pageName);
+				break;
+			case "begin_dataTest":
+				executeDataTest();
+				break;
+		}*/
 	}
 	public void clickButton(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
 		WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
 		if(button.getText().equals(buttonText) && button.isEnabled()){
 			button.click();
 		}else{
-			this.reportEvent(this.currentResultFilePath, this.currentTestName, this.currentTestStepName, this.currentTestObjectName, buttonText, button.getText());
+			failedTestsCounter++;
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Button is not displayed or has changed position"));
+			this.captureScreen(this.currentTestName);
 		}
 	}	
 	public   void clickLink(String objectLocatorType, String locatorValue) throws Exception{
@@ -351,20 +470,89 @@ public class Util extends CSV_Reader{
 		if(link.isDisplayed()){
 			link.click();
 		}else{
-			this.reportEvent(this.currentResultFilePath, this.currentTestName, this.currentTestStepName, this.currentTestObjectName, "true", "false");
+			failedTestsCounter++;
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Link is not displayed or has changed position"));
+			this.captureScreen(this.currentTestName);
 		}
 	} 
 	public  void clickLink(WebDriver driver, WebElement webElement){
 		((JavascriptExecutor)driver).executeScript("arguments[0].click()", webElement);
 	}
 	public   void enterText(String objectLocatorType, String locatorValue, String text){
-		driver.findElement(findObject(objectLocatorType, locatorValue)).sendKeys(text);
-		String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
+		WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+		if(textBox.isDisplayed()){
+			textBox.sendKeys(text);
+			String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
+			if(!enteredText.trim().equals(text)){
+				failedTestsCounter++;
+				try {
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Text does not match text entered"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}else{
+			failedTestsCounter++;
+			try {
+				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Link is not displayed or has changed position"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			this.captureScreen(this.currentTestName);
+		}
 	}
-	public   void selectListItem(String objectLocatorType, String locatorValue, String itemToSelect){
+	public void selectListItem(String objectLocatorType, String locatorValue, String optionToSelect){
 		Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
-		selectBox.selectByVisibleText(itemToSelect);
-		String selected = selectBox.getFirstSelectedOption().getAttribute("selected");
+		if(selectBox.getOptions() != null){
+			selectBox.selectByVisibleText(optionToSelect);
+			String selectedOption = selectBox.getFirstSelectedOption().getAttribute("selected");
+			if(!selectedOption.equals(optionToSelect)){
+				failedTestsCounter++;
+				try {
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Option does not match option selected"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}else{
+				failedTestsCounter++;
+				try {
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Select box is not displayed or has changed position"));
+				}catch (IOException e) {
+					e.printStackTrace();
+				}
+				this.captureScreen(this.currentTestName);
+			}
+		}
+	}
+	public    void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData){
+		WebElement radioButton = null;
+		switch(objectLocatorType){
+			case "id":
+				radioButton = driver.findElement(By.id(locatorValue.trim()));
+			case "xpath":
+				String locatorwithTestData = locatorValue.replace(locatorValue.substring(16, locatorValue.length()), testData) + "']";
+				radioButton = driver.findElement(By.xpath(locatorwithTestData));
+		}
+		if(radioButton.isDisplayed()){
+			radioButton.click();
+			String selectedRadioButton = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
+			if(!selectedRadioButton.trim().equals(testData)){
+				failedTestsCounter++;
+				try {
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Selected radio does not match radio selected"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}else{
+				failedTestsCounter++;
+				try {
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Radio button is not displayed or has changed position"));
+				}catch (IOException e) {
+					e.printStackTrace();
+				}
+				this.captureScreen(this.currentTestName);
+			}
+		}
 	}
 	public   void switchToPopup() throws InterruptedException{
 		 Set<String> windowHandles = driver.getWindowHandles();
@@ -383,20 +571,10 @@ public class Util extends CSV_Reader{
 			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
 		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
 	}
-	public    void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData){
-		WebElement radioButton = null;
-		switch(objectLocatorType){
-			case "id":
-				radioButton = driver.findElement(By.id(locatorValue.trim()));
-			case "xpath":
-				String locatorwithTestData = locatorValue.replace(locatorValue.substring(16, locatorValue.length()), testData) + "']";
-				//System.out.println(locatorwithTestData);
-				radioButton = driver.findElement(By.xpath(locatorwithTestData));
-				radioButton.click();
-				/*if(radioButton.isSelected()){
-					suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-				}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
-		}
+	
+	public void verifyTextPresent(String objectLocatorType, String locatorValue, String testData){
+		WebElement text = null;
+		driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
 	}
 	public   void waitForObject(String time) throws Exception{
 		int seconds = Integer.parseInt(time);
@@ -481,7 +659,20 @@ public class Util extends CSV_Reader{
 			return driver;
 	}
 	public  String navigateToUrl(String environment) throws MalformedURLException{
-		String Url = null;
+		String Url = "https://qa1.mygravitant.com";;
+		switch (environment){
+			case "QA1":
+				Url = Url.replace("qa1", "qa3");
+				LOGS.info("************Navigating to QA1************");
+			case "QA3":
+				Url = Url.replace("qa1", "qa3");
+				LOGS.info("************Navigating to QA3************");
+			default:
+				Url = Url;
+				LOGS.info("************Navigating to QA1************");
+		}
+		
+			
 		if(environment.equals("QA1")){
 			Url = "https://qa1.mygravitant.com";
 			LOGS.info("************Navigating to QA1************");
@@ -500,52 +691,20 @@ public class Util extends CSV_Reader{
 		String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 		return path;
 	}
-	/**
-	 * Method reads the Object column in the test case CSV file and
-	 * returns the object on which an action is to be performed
-	 * @param testCaseName
-	 * @return the Object
-	 * @throws IOException 
-	 */
-	/*public ArrayList<String> getObjectIds(String testCaseName) throws IOException{
-		ArrayList<String> objectId = testCase.getColumnData(testCaseName, "Object");
-		return objectId;
-	}*/
-	/**
-	 * Method reads the Action column in the test case CSV file and
-	 * returns the action to be performed
-	 * @param testCaseName
-	 * @return the Action
-	 * @throws IOException 
-	 */
-	/*public ArrayList<String> getActions(String testCaseName) throws IOException{
-		ArrayList<String> actions = testCase.getColumnData(testCaseName, "Action");
-		return actions;
-	}*/
-	/**
-	 * Method reads the 'Page' column in the test case CSV file and
-	 * returns the filename in Object_Map folder where the object's properties are stored.
-	 * @param testCaseName
-	 * @return object map filename
-	 * @throws IOException 
-	 */
-	/*public ArrayList<String> getObjectMapFilenames(String testCaseName) throws IOException{
-		ArrayList<String> objectMapFilename = testCase.getColumnData(testCaseName, "Page");
-		return objectMapFilename;
-	}*/
 	public CharSequence getMainWindowHandle(){
 		String mainWindowHandle=driver.getWindowHandle();
 		System.out.println("windowhandle:" + mainWindowHandle);
 		return mainWindowHandle;
 	}
-	
-	public void captureScreen() {
+	public void captureScreen(String currentTestName) {
+		screenshotCounter++;
 		String path;
 	    try {
 	        File source = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
 	        path = "./target/screenshots/" + source.getName();
 	        String screenshotFolderName = createFolder("C:\\AutomatedTests", "Screenshots").toString();
-	        FileUtils.copyFile(source, new File(screenshotFolderName + "\\Screenshot_" + currentTime + ".png")); 
+	        String currentTestScreenshotFolderName = createFolder(screenshotFolderName, "\\" + currenDate).toString();
+	        FileUtils.copyFile(source, new File(currentTestScreenshotFolderName + "\\" + currentTestName + "_" + screenshotCounter + ".png")); 
 	    }
 	    catch(IOException e) {
 	        path = "Failed to capture screenshot: " + e.getMessage();
@@ -612,7 +771,7 @@ public class Util extends CSV_Reader{
                 (char) (myRandom.nextInt(26) + 'a');               
         }
 	}
-	public  String getBrowserPath(String browserName){
+	public String getBrowserPath(String browserName){
 		String browserPath = null;
 		browserName = browserName.toLowerCase() + ".exe";
 		File root = new File("c:\\");
@@ -670,6 +829,7 @@ public class Util extends CSV_Reader{
         	String[] objectInfo = null;
 			if(!testStep.equals("Step")){
 				if(objectMapFileName != null){
+					//objectInfo = this.getObjectInfo(pageName, testStepObjectName);
 		    		objectInfo = this.getObjectInfo(objectMapFileName, testStepObjectName);
 		    		locator_Type = this.getObjectLocatorType(objectInfo);
 		    		locator_Value = this.getObjectLocatorValue(objectInfo);
@@ -678,65 +838,117 @@ public class Util extends CSV_Reader{
 	        			testData = this.getTestData(testDataFileName, testStepObjectName);
 		        		System.out.println(testData);
 	        		}
-	    			this.executeAction(testDataFileObjectName, action, locator_Type, locator_Value, testData);
+	    			this.executeAction(pageName, testStepObjectName, action,testData);
 		    	}
 			}
 		}
 		LOGS.info("************Logging into QA1************");
 		testCaseReader.close();
 	}
-	public void reportEvent(String resultFileName, String testCaseName, String testStep, String object, String expected, String actual) throws IOException{
-		counter++;
-		if(!expected.equals(actual)){
-			FileUtils.writeStringToFile(new File(resultFileName), counter + ". " + testCaseName + "Test Step: " + testStep + object, true);	
-			FileUtils.writeStringToFile(new File(resultFileName), "Test Step: " + testStep, true);
-			FileUtils.writeStringToFile(new File(resultFileName), "Expected: " + expected, true);
-			FileUtils.writeStringToFile(new File(resultFileName), "Actual: " + expected, true);
+	public String[] reportEvent(String testCaseName, String testStep, String message) throws IOException{
+		failedStepCounter++;
+		String[] report = {testCaseName, String.valueOf(failedStepCounter), testStep, message};
+		return report;
+	}
+	/*public void writeFailedStepToResultsFile(String resultFileName, String[] string){
+		BufferedWriter bufferedWriter = null;  
+		String formattedFailedStep = null;
+		formattedFailedStep = String.format("Test Case: " + 
+									string[0] +
+									'\n' +
+									'\t' +
+									"Failed Test Step(s): " +
+									"\n" +
+									string[1] +
+									". " + 
+									string[2] +
+									'\t' +
+									'\t' +
+									string[3]);
+		System.out.println(formattedFailedStep);
+		 try {
+			bufferedWriter = new BufferedWriter(new FileWriter(resultFileName));
+			bufferedWriter.append(formattedFailedStep);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-	}
-	public void appendToResultsFile(String resultFileName, String string){
-		BufferedWriter bufferedWriter = null;        
-	    try {           
-	        bufferedWriter = new BufferedWriter(new FileWriter(resultFileName));            
-	        bufferedWriter.append(string);
-	        bufferedWriter.newLine();
+	}*/
+	public void writeFailedStepToResultsFile(String resultFileName, String[] string){
+		BufferedWriter writer = null;        
+	    try {   
+	        writer = new BufferedWriter(new FileWriter(resultFileName));
+	        writer.append("Test Case: " + string[0]);
+    		writer.newLine();
+    		writer.append("\t");
+    		writer.append("Failed Test Step(s): ");
+    		writer.newLine();
+    		writer.append("\t\t");
+    		writer.append(string[1]).
+    		append(". ").
+    		append(string[2]).
+    		append(" - ").
+    		append(string[3]);
 	    } catch (FileNotFoundException ex) {
 	        ex.printStackTrace();
 	    } catch (IOException ex) {
 	        ex.printStackTrace();
 	    } finally {
 	        try {
-	            if (bufferedWriter != null) {
-	                bufferedWriter.flush();
-	                bufferedWriter.close();
+	            if (writer != null) {
+	                writer.flush();
+	                writer.close();
 	            }
 	        } catch (IOException ex) {
 	            ex.printStackTrace();
 	        }
 	    }
 	}
-	public void appendToResultsFile(String resultFileName, int number) {
-		BufferedWriter bufferedWriter = null;        
+	public int getFailedTestNumber(){
+		return failedTestsCounter;
+	}
+	public void writeTestResultsFile(){
+		BufferedReader reader;
+		StringBuilder sb = new StringBuilder();
+		try {
+			reader = new BufferedReader(new FileReader(this.currentResultFilePath));
+			String line;
+			try {
+				while ((line = reader.readLine()) != null) {
+				    sb.append(line);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		BufferedWriter writer = null;        
 	    try {           
-	        bufferedWriter = new BufferedWriter(new FileWriter(resultFileName));            
-	        bufferedWriter.append(String.valueOf(number));
-	        bufferedWriter.newLine();
+	        writer = new BufferedWriter(new FileWriter(this.currentResultFilePath));            
+	        writer.append("Tests Executed: " + this.totalTestNumber);
+	        writer.newLine();
+	        writer.append("Tests Passed: " + (this.totalTestNumber - this.failedTestsCounter));
+	        writer.newLine();
+	        writer.append("Tests Failed: " + this.failedTestsCounter);
+	        writer.newLine();
+	        writer.newLine();
+	        writer.append(sb);
 	    } catch (FileNotFoundException ex) {
 	        ex.printStackTrace();
 	    } catch (IOException ex) {
 	        ex.printStackTrace();
 	    } finally {
 	        try {
-	            if (bufferedWriter != null) {
-	                bufferedWriter.flush();
-	                bufferedWriter.close();
+	            if (writer != null) {
+	                writer.flush();
+	                writer.close();
 	            }
 	        } catch (IOException ex) {
 	            ex.printStackTrace();
 	        }
 	    }
-		
 	}
+	
 	//stand alone runner
 	/*public  static void main(String arg[]) throws IOException{
 		//System.out.println(Util.getBrowserPath("firefox").toString());
