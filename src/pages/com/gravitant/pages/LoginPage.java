@@ -27,9 +27,10 @@ public class LoginPage {
 	public LoginPage(WebDriver driver) {
 		  this.driver = driver;
 	}
-	public void enterUsername(String login) {
+	public void enterUsername(String username) {
 		 usernameTextBox.clear();
-		 usernameTextBox.sendKeys(login);
+		 LOGS.info("> Logging-in with username: " + username);
+		 usernameTextBox.sendKeys(username);
 	}
 	public void enterPassword(String password) {
 		 passwordTextBox.clear();

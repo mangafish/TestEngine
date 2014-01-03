@@ -67,6 +67,7 @@ public class RunTests{
 	public String currentResultFileName;
 	public String currentResultFilePath;
 	public int totalTestsExecuted= 0;
+	public int datatestIterations = 0;
 	
 	public String currentDate = FastDateFormat.getInstance("dd-MMM-yyyy").format(System.currentTimeMillis( ));
 	public Calendar cal = Calendar.getInstance();
@@ -116,77 +117,73 @@ public class RunTests{
 				util.setCurrentTestName(currentTest);
 				util.setTotalTestNumber();
 				String currentTestPath = util.getTestCasePath(currentTest);
-	        	LOGS.info("-------------------->> STARTING TEST CASE: " + currentTest + "<<--------------------");
+	        	LOGS.info("-------------------->> STARTING TEST CASE: " + currentTest + " <<--------------------");
 				CSVReader testCaseReader = new CSVReader(new FileReader(currentTestPath));
 			    List<String[]> testCaseContent = testCaseReader.readAll();
-			    //numberofTestSteps = util.getRowCount(testCaseContent);
-			    int lineNumber = 0;
-			    //for (Object object : testCaseContent){
-			    for (int j=1; j<testCaseContent.size(); j++){
-			    	lineNumber++;
-			    	testStepRow = testCaseContent.get(j);
-				    testStepNumber = testStepRow[0];
-				    testStepPageName = testStepRow[2];
-				    testStepObjectName = testStepRow[3];
-				    action = testStepRow[4];
-				    if(action.equals("begin_dataTest")){
-				    	int datatestLineNumber = lineNumber +1;
-				    	for(int k= datatestLineNumber; k<testCaseContent.size(); k++){
-				    		testStepRow = testCaseContent.get(k);
-				    		testStepNumber = testStepRow[0];
+			    /*******Find if this is a data test *******/
+			    int dataTestStartRow = 0;
+		    	int dataTestEndRow = 0;
+			    if(util.findIfDataTest(testCaseContent)){
+			    	dataTestStartRow = util.getRowNumber(testCaseContent, "begin_dataTest");
+			    	dataTestEndRow = util.getRowNumber(testCaseContent, "end_dataTest");
+			    }
+			    /*******If this is a data test execute test steps for number of iterations specified*******/
+			    if(dataTestStartRow!=0){
+			    	for (int j=1; j<=dataTestStartRow; j++){
+					    	testStepRow = testCaseContent.get(j);
+						    testStepNumber = testStepRow[0];
 						    testStepPageName = testStepRow[2];
 						    testStepObjectName = testStepRow[3];
 						    action = testStepRow[4];
-						    datatestData = util.getDataTestData(testStepPageName, testStepObjectName);
-						    for(int m=0; m<datatestData.size(); m++){
-						    	testData = datatestData.get(m);
-							    if(!action.equals("end_dataTest")){
-							    	System.out.println(action);
-							    	util.executeAction(testStepPageName, testStepObjectName, action, testData);
-							    }else{
-							    	break;
-							    }
+						    testStep = testStepRow[1];
+				        	util.setCurrentTestStep(testStep);
+						    if(action.equals("begin_dataTest")){
+						    	datatestIterations = Integer.parseInt(util.getTestData(testStepPageName, testStepObjectName));
+						    	util.setCurrentTestStepNumber(j);
+						    }else{
+						    	testData = util.getTestData(testStepPageName, testStepObjectName);
+							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 						    }
-						    datatestLineNumber++;
-				    	}
-				    }else{
-				    	testData = util.getTestData(testStepPageName, testStepObjectName);
-				    	util.executeAction(testStepPageName, testStepObjectName, action, testData);
-				    }
-				 }
-			  
-		       /* while((testStepRow = testCaseReader.readNext()) != null){
-		        	action = testStepRow[4];
-        			testData = util.getTestData(testDataFileName, testStepObjectName);
-		        	testStepNumber = testStepRow[0];
-		        	util.setCurrentTestStep(testStepNumber);
-		        	testStep = testStepRow[1];
-		        	util.setCurrentTestStep(testStep);
-		        	pageName = testStepRow[2];
-		        	util.setCurrentPageName(pageName);
-		        	testStepObjectName = testStepRow[3];
-		        	util.setCurrentTestObjectName(testStepObjectName);
-		        	objectMapFileName = util.getObjectMapFilePath(pageName);
-		        	testDataFileName = util.getTestDataFilePath(pageName);
-		        	if(!testStep.equals("Step")){LOGS.info("> Executing test step: " + testStep);}
-		        	*//*******Read object map file (page file) in Object_Map folder and get the locator type & value for the test step object*******//*
-		        	if(objectMapFileName != null){
-		        		objectInfo = util.getObjectInfo(objectMapFileName, testStepObjectName);
-		        		if(objectInfo != null){
-		        			locator_Type = util.getObjectLocatorType(objectInfo);
-		        			locator_Value = util.getObjectLocatorValue(objectInfo);
-		        		}
-
-		        		*//****Execute the action using object name, locator type, locator value, and test data (if any) *******//*
-				        util.executeAction(testDataFileObjectName, action, locator_Type, locator_Value, testData);
-		        	}
-		        }*/
+			    	}
+			    	/************************************************************/
+			    	int currentDatatestIteration = 1;
+			    	for(int n = 1; n<=datatestIterations; n++){
+			    		if(currentDatatestIteration > datatestIterations){
+			    			break;
+			    		}else{
+			    			LOGS.info("*** Beginning data test iteration: " + currentDatatestIteration + "***");
+			    			for (int m=dataTestStartRow +1; m<dataTestEndRow; m++){
+							    	testStepRow = testCaseContent.get(m);
+								    testStepNumber = testStepRow[0];
+								    testStepPageName = testStepRow[2];
+								    testStepObjectName = testStepRow[3];
+								    action = testStepRow[4];
+								    testStep = testStepRow[1];
+						        	util.setCurrentTestStep(testStep);
+								    testData = util.getTestData(testStepPageName, testStepObjectName, currentDatatestIteration);
+								    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+			    			}
+			    		}
+			    		currentDatatestIteration++;
+			    	}
+			    	/************************************************************/
+			    	for (int j=dataTestEndRow+1; j<testCaseContent.size(); j++){
+				    	testStepRow = testCaseContent.get(j);
+					    testStepNumber = testStepRow[0];
+					    testStepPageName = testStepRow[2];
+					    testStepObjectName = testStepRow[3];
+					    action = testStepRow[4];
+					    testStep = testStepRow[1];
+			        	util.setCurrentTestStep(testStep);
+					    testData = util.getTestData(testStepPageName, testStepObjectName);
+					    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+					}
 			    testCaseReader.close();
+			    }
+		util.writeTestResultsFile();
 			}
 		}
-		//util.writeTestResultsFile();
 	}
 }
-
 	 
 
