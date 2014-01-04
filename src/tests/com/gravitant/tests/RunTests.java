@@ -84,7 +84,9 @@ public class RunTests{
  	}
 	
 	/**
+	 * Method reads the Tests_To_Run text file and kicks off tests mentioned in the file
 	 * @throws Exception
+	 * @return null
 	 */
 	public void start() throws Exception{
 		Util util = new Util();
@@ -93,13 +95,13 @@ public class RunTests{
 		/*******Create test results folder ****************/
 		testResultsFolderName = util.createFolder(automatedTestsFolder, "Test_Results").toString();//create test results folder
 		currentResultsFolderName = util.createFolder(testResultsFolderName, "Results_" + currentDate).toString();//create folder with todays date within above folder
-		currentResultFilePath =util.createResultsFile(currentResultsFolderName, currentTime);
+		currentResultFilePath =util.createResultsFile(currentResultsFolderName, currentTime);//create test results file
 		util.setCurrentResultFilePath(currentResultFilePath);
 		currentResultFileName = currentResultFilePath;
 		util.setCurrentResultFileName(currentResultFileName);
 		util.setCurrentDate(currentDate);
 		util.setCurrentTime(currentTime);
-		/*******Get environment & browser type from test config file & launch browser, navigate to Url****************/
+		/*******Get environment & browser type from test config file & launch browser and navigate to Url****************/
 		environment = util.getTestConfigProperty("environment");
 		browserType = util.getTestConfigProperty("browserType");
 		userName = util.getTestConfigProperty("username");
@@ -107,13 +109,13 @@ public class RunTests{
 		util.launchBrowser(browserType);
 		util.navigateToUrl(environment);
 		util.login(userName, password);
-		/*******Get test cases to run from TestsToRun.txt*****************************************************/
+		/*******Get test cases to run from Tests_To_Run.txt*****************************************************/
         java.util.List<String> testsToRun = util.getTestsToRun();
 		for(int i=0; i<=testsToRun.size()-1; i++){
 			currentTest = testsToRun.get(i);
 			//System.out.println(currentTest);
-			/*******If test case exists in Test_Cases folder, read the file and get the page name for each step*******/
-			if(!util.verifyTestCaseExists(currentTest).equals(null)){
+			/*******If test case exists in Test_Cases folder, read the file and get the page name and action for each object in the test steps*******/
+			if(util.verifyTestCaseExists(currentTest) == true){
 				util.setCurrentTestName(currentTest);
 				util.setTotalTestNumber();
 				String currentTestPath = util.getTestCasePath(currentTest);
@@ -130,20 +132,20 @@ public class RunTests{
 			    /*******If this is a data test execute test steps for number of iterations specified*******/
 			    if(dataTestStartRow!=0){
 			    	for (int j=1; j<=dataTestStartRow; j++){
-					    	testStepRow = testCaseContent.get(j);
-						    testStepNumber = testStepRow[0];
-						    testStepPageName = testStepRow[2];
-						    testStepObjectName = testStepRow[3];
-						    action = testStepRow[4];
-						    testStep = testStepRow[1];
-				        	util.setCurrentTestStep(testStep);
-						    if(action.equals("begin_dataTest")){
-						    	datatestIterations = Integer.parseInt(util.getTestData(testStepPageName, testStepObjectName));
-						    	util.setCurrentTestStepNumber(j);
-						    }else{
-						    	testData = util.getTestData(testStepPageName, testStepObjectName);
-							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
-						    }
+				    	testStepRow = testCaseContent.get(j);
+					    testStepNumber = testStepRow[0];
+					    testStepPageName = testStepRow[2];
+					    testStepObjectName = testStepRow[3];
+					    action = testStepRow[4];
+					    testStep = testStepRow[1];
+			        	util.setCurrentTestStep(testStep);
+					    if(action.equals("begin_dataTest")){
+					    	datatestIterations = Integer.parseInt(util.getTestData(testStepPageName, testStepObjectName));
+					    	util.setCurrentTestStepNumber(j);
+					    }else{
+					    	testData = util.getTestData(testStepPageName, testStepObjectName);
+						    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+					    }
 			    	}
 			    	/************************************************************/
 			    	int currentDatatestIteration = 1;
@@ -151,7 +153,7 @@ public class RunTests{
 			    		if(currentDatatestIteration > datatestIterations){
 			    			break;
 			    		}else{
-			    			LOGS.info("*** Beginning data test iteration: " + currentDatatestIteration + "***");
+			    			LOGS.info("*********** Beginning data test iteration: " + currentDatatestIteration + "************");
 			    			for (int m=dataTestStartRow +1; m<dataTestEndRow; m++){
 							    	testStepRow = testCaseContent.get(m);
 								    testStepNumber = testStepRow[0];
@@ -179,11 +181,28 @@ public class RunTests{
 					    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 					}
 			    testCaseReader.close();
+			    LOGS.info("*********** End data test ************");
+			    }else{
+			    	/*******If this is NOT a data test execute test steps in the test case sequentially*******/
+			    	for (int j=1; j<testCaseContent.size(); j++){
+				    	testStepRow = testCaseContent.get(j);
+					    testStepNumber = testStepRow[0];
+					    testStepPageName = testStepRow[2];
+					    testStepObjectName = testStepRow[3];
+					    action = testStepRow[4];
+					    testStep = testStepRow[1];
+			        	util.setCurrentTestStep(testStep);
+					    testData = util.getTestData(testStepPageName, testStepObjectName);
+					    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+					}
 			    }
 		util.writeTestResultsFile();
+			}else{
+				/*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******/
+				LOGS.info("Test case: " + "\"" + currentTest + "\"" +  " does not exist in Test_Cases folder");
+				continue;
 			}
 		}
 	}
 }
 	 
-
