@@ -30,6 +30,7 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +54,9 @@ public class Util extends CSV_Reader{
 	RunTests runTest = new RunTests();
 	Reporter resultReporter = new Reporter();
 	public  WebDriver driver;
+	public String testDirectoryPath  = null;
+	public String testConfigFilePath  = null;
+	public String testsToRunFilePath  = null;
 	public File testCasesFolder = new File("C:\\AutomatedTests\\Test_Cases\\");
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 	public String locator_Type = null;
@@ -83,7 +87,89 @@ public class Util extends CSV_Reader{
 	public Util() throws IOException {
 		super();
 	}
+	/**Method gets the location of the exe jar file
+	 * @return String path to the automated tests directory 
+	 */
+	public String getTestDirectoryPath(){
+		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());   
+		String jarFilePath = jarFile.getAbsolutePath();
+		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
+		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("GravitantAutomatedTests"));
+		this.setTestDirectoryPath(testConfigDirectory);
+		return testConfigDirectory;
+	}
+	/**Method sets the path to the automated tests directory 
+	 */
+	public void setTestDirectoryPath(String path){
+		testDirectoryPath  = path;
+	}
+	/**Method gets the location of the Test_Config.txt file using
+	 * the jar file location as a relative path
+	 * @return String path to Test_Config.txt file 
+	 */
+	public String getTestConfigFilePath(){
+		testConfigFilePath = this.testDirectoryPath + "\\Test_Config.txt";
+		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());   
+		this.setTestConfigFilePath(testConfigFilePath);
+		return testConfigFilePath;
+	}
 	
+	public void setTestConfigFilePath(String testConfigPath){
+		testConfigFilePath  = testConfigPath;
+	}
+	/**Method gets the value for the specified test property from 
+	 * Test_Config.txt
+	 * @return String property value
+	 * @throws IOException
+	 */
+	public String getTestConfigProperty(String property) throws IOException{
+		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(this.testConfigFilePath));
+		String currentline = null;
+		String propertyValue = null;
+	    while((currentline = readTestConfigFile.readLine()) != null) {
+	    	if(currentline.contains(property)){
+	    		String[] split = currentline.split("=");
+	    		propertyValue = split[1];
+	    		break;
+	    	}
+	    }
+		//System.out.println(propertyValue);
+	    readTestConfigFile.close();
+		return propertyValue;
+	}
+	/**Method gets the list of all tests specified in
+	 * Tests_To_Run.txt
+	 * @return ArrayList of tests to run
+	 * @throws IOException
+	 */
+	public List<String> getTestsToRun() throws IOException{
+		String testsToRunPath = this.testDirectoryPath + "\\Tests_To_Run\\TestsToRun.txt";
+		URL url = getClass().getResource("TestsToRun.txt");
+		System.out.println(url.getPath());
+		/*BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(url.getPath()));
+		String currentline = null;*/
+		List<String> testsToRun = new ArrayList<>();
+	   /* while((currentline = readTestsToRunFile.readLine()) != null) {
+	    	//System.out.println(currentline);
+	    	testsToRun.add(currentline);
+	    }
+	    readTestsToRunFile.close();*/
+		return testsToRun;
+	}
+	public String findDirectory(String directoryToFind){
+		String directoryPath = null;
+		File root = new File(this.testDirectoryPath);
+        File[] list = root.listFiles();
+        for (File f : list) {
+            if (f.isDirectory() && f!=null){
+            	File[] filesInFolder = f.listFiles();
+            	if(Arrays.toString(filesInFolder).contains(directoryToFind)){
+            		directoryPath =f.getAbsolutePath() + "\\" + directoryToFind;
+            	}
+            }
+        }
+		return directoryPath;
+	}
 	public int getRowCount(List<?> testCaseContent) throws IOException{
 		int numberOfRows = 0;
 		for (Object object : testCaseContent){
@@ -130,42 +216,7 @@ public class Util extends CSV_Reader{
 		this.currentTime = currentTime;
 	}
 	
-	/**Method gets the value for the specified property from 
-	 * Test_Config.txt
-	 * @return String property value
-	 * @throws IOException
-	 */
-	public String getTestConfigProperty(String property) throws IOException{
-		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(runTest.testConfigFilePath));
-		String currentline = null;
-		String propertyValue = null;
-	    while((currentline = readTestConfigFile.readLine()) != null) {
-	    	if(currentline.contains(property)){
-	    		String[] split = currentline.split("=");
-	    		propertyValue = split[1];
-	    		break;
-	    	}
-	    }
-		//System.out.println(propertyValue);
-	    readTestConfigFile.close();
-		return propertyValue;
-	}
-	/**Method gets the list of all tests specified in
-	 * Tests_To_Run.txt
-	 * @return ArrayList of tests to run
-	 * @throws IOException
-	 */
-	public List<String> getTestsToRun() throws IOException{
-		BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(runTest.testsToRun));
-		String currentline = null;
-		List<String> testsToRun = new ArrayList<>();
-	    while((currentline = readTestsToRunFile.readLine()) != null) {
-	    	//System.out.println(currentline);
-	    	testsToRun.add(currentline);
-	    }
-	    readTestsToRunFile.close();
-		return testsToRun;
-	}
+	
 	/**
 	 * Method verifies the test case listed in Tests_To_Run.txt exists in
 	 * the Test_Cases folder.
