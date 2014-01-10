@@ -12,7 +12,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.*;
 
-import com.gravitant.tests.RunTests;
+import com.gravitant.test.RunTests;
 
 import java.io.*;
 import java.util.ArrayList;

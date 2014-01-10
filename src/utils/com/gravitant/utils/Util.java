@@ -11,6 +11,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.PageFactory;
@@ -19,6 +20,7 @@ import org.openqa.selenium.support.ui.Select;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -43,21 +45,20 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.gravitant.test.RunTests;
 import com.gravitant.utils.CSV_Reader;
-import com.gravitant.utils.Reporter;
-import com.gravitant.pages.LandingPage;
-import com.gravitant.pages.LoginPage;
-import com.gravitant.tests.RunTests;
 
 public class Util extends CSV_Reader{
 	static Logger LOGS =  Logger.getLogger(Util.class);
 	RunTests runTest = new RunTests();
-	Reporter resultReporter = new Reporter();
 	public  WebDriver driver;
+	public String filePath = null;
 	public String testDirectoryPath  = null;
 	public String testConfigFilePath  = null;
 	public String testsToRunFilePath  = null;
-	public File testCasesFolder = new File("C:\\AutomatedTests\\Test_Cases\\");
+	public String fileNameToSearch = null;
+	public String objectMapFilePath = null;
+	public String testDataFilePath = null;
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
 	public String locator_Type = null;
     public String locator_Value = null;
@@ -88,7 +89,7 @@ public class Util extends CSV_Reader{
 		super();
 	}
 	/**Method gets the location of the exe jar file
-	 * @return String path to the automated tests directory 
+	 * @return String - path to the automated tests directory 
 	 */
 	public String getTestDirectoryPath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());   
@@ -99,19 +100,58 @@ public class Util extends CSV_Reader{
 		return testConfigDirectory;
 	}
 	/**Method sets the path to the automated tests directory 
+	 * @return null
 	 */
 	public void setTestDirectoryPath(String path){
 		testDirectoryPath  = path;
 	}
-	/**Method gets the location of the Test_Config.txt file using
-	 * the jar file location as a relative path
-	 * @return String path to Test_Config.txt file 
-	 */
-	public String getTestConfigFilePath(){
-		testConfigFilePath = this.testDirectoryPath + "\\Test_Config.txt";
-		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());   
-		this.setTestConfigFilePath(testConfigFilePath);
-		return testConfigFilePath;
+	public String findFile(String parentDirectory, String fileToFind){
+		fileToFind = fileToFind.toLowerCase();
+		String filePath = null;
+		File root = new File(parentDirectory);
+		setFileNameToSearch(fileToFind);
+		if(root.isDirectory()) {
+			filePath = search(root);
+		} else {
+		    System.out.println(root.getAbsoluteFile() + " is NOT a directory");
+		}
+		return filePath;
+	}
+	private String search(File file){
+		String fileToSearch = getFileNameToSearch().trim();
+		if(file.isDirectory()){
+			for(File temp : file.listFiles()){
+				if(temp.isDirectory()){
+					search(temp);
+				}else{
+					if(temp.getName().trim().toLowerCase().equals(fileToSearch)) {	
+						this.filePath = temp.getAbsolutePath();
+				    }
+				}
+			}
+		}
+		return filePath;
+	}
+	 public void setFileNameToSearch(String fileNameToSearch) {
+			this.fileNameToSearch = fileNameToSearch;
+	}
+	public String getFileNameToSearch() {
+		return fileNameToSearch.toLowerCase();
+	}
+	
+	public String findDirectory(String directoryToFind){
+		String directoryPath = null;
+		File root = new File(this.testDirectoryPath);
+        File[] list = root.listFiles();
+        for (File f : list) {
+            if (f.isDirectory() && f!=null){
+            	File[] filesInFolder = f.listFiles();
+            	if(Arrays.toString(filesInFolder).contains(directoryToFind)){
+            		directoryPath =f.getAbsolutePath() + "\\" + directoryToFind;
+            	}
+            }
+        }
+		return directoryPath;
 	}
 	
 	public void setTestConfigFilePath(String testConfigPath){
@@ -123,11 +163,12 @@ public class Util extends CSV_Reader{
 	 * @throws IOException
 	 */
 	public String getTestConfigProperty(String property) throws IOException{
-		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(this.testConfigFilePath));
+		String testConfigFilePath = this.findFile(this.testDirectoryPath, "Test_Config.txt");
+		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(testConfigFilePath));
 		String currentline = null;
 		String propertyValue = null;
 	    while((currentline = readTestConfigFile.readLine()) != null) {
-	    	if(currentline.contains(property)){
+	    	if(currentline.toLowerCase().contains(property.toLowerCase())){
 	    		String[] split = currentline.split("=");
 	    		propertyValue = split[1];
 	    		break;
@@ -143,32 +184,32 @@ public class Util extends CSV_Reader{
 	 * @throws IOException
 	 */
 	public List<String> getTestsToRun() throws IOException{
-		String testsToRunPath = this.testDirectoryPath + "\\Tests_To_Run\\TestsToRun.txt";
-		URL url = getClass().getResource("TestsToRun.txt");
-		System.out.println(url.getPath());
-		/*BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(url.getPath()));
-		String currentline = null;*/
+		String testsToRunPath = this.findFile(this.testDirectoryPath, "TestsToRun.txt");
+		BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(testsToRunPath));
+		String currentline = null;
 		List<String> testsToRun = new ArrayList<>();
-	   /* while((currentline = readTestsToRunFile.readLine()) != null) {
+	    while((currentline = readTestsToRunFile.readLine()) != null) {
 	    	//System.out.println(currentline);
 	    	testsToRun.add(currentline);
 	    }
-	    readTestsToRunFile.close();*/
+	    readTestsToRunFile.close();
 		return testsToRun;
 	}
-	public String findDirectory(String directoryToFind){
-		String directoryPath = null;
-		File root = new File(this.testDirectoryPath);
-        File[] list = root.listFiles();
-        for (File f : list) {
-            if (f.isDirectory() && f!=null){
-            	File[] filesInFolder = f.listFiles();
-            	if(Arrays.toString(filesInFolder).contains(directoryToFind)){
-            		directoryPath =f.getAbsolutePath() + "\\" + directoryToFind;
-            	}
-            }
-        }
-		return directoryPath;
+	/**
+	 * Method verifies the test case listed in Tests_To_Run.txt exists in
+	 * the Test_Cases folder.
+	 * @param testName
+	 * @return boolean
+	 */
+	public boolean verifyTestCaseExists(String testName){
+		boolean testCaseExists = false;
+		String testCasePath = this.findFile(this.testDirectoryPath + "\\Test_Cases", testName + ".csv");
+		if(!testCasePath.equals(null) && testCasePath.contains(testName)){
+       		testCaseExists = true;
+       	}else{
+       		testCaseExists = false;
+       	}
+		return testCaseExists;
 	}
 	public int getRowCount(List<?> testCaseContent) throws IOException{
 		int numberOfRows = 0;
@@ -216,49 +257,14 @@ public class Util extends CSV_Reader{
 		this.currentTime = currentTime;
 	}
 	
-	
-	/**
-	 * Method verifies the test case listed in Tests_To_Run.txt exists in
-	 * the Test_Cases folder.
-	 * @param testName
-	 * @return boolean
-	 */
-	public boolean verifyTestCaseExists(String testName){
-		boolean testCaseExists = false;
-		String testCasepath = null;
-		for (int i=0; i<=runTest.testCasesList.length-1; i++) {
-    		String testCaseName = runTest.testCasesList[i].getName();
-    		testCasepath = runTest.testCasesList[i].getPath();
-           	if(testCaseName.equals(testName + ".csv")){
-           		testCaseExists = true;
-           		break;
-           	}else{
-           		testCaseExists = false;
-           	}
-		}
-		if(!testCaseExists){
-			LOGS.info("Test Case: " + testName + " does not exist");
-		}
-		return testCaseExists;
-	}
 	/**
 	 * Method returns path to the test case in Tests_Cases folder
 	 * @param testName
 	 * @return String path to test case.
 	 */
 	public String getTestCasePath(String testCaseName){
-		String testCasepath = null;
-		//System.out.println(Arrays.toString(runTest.testCasesList));
-		for (int i=0; i<=runTest.testCasesList.length-1; i++) {
-			String testName = runTest.testCasesList[i].getName();
-			//System.out.println(testName);
-			if(testName.equals(testCaseName + ".csv")){
-				testCasepath = runTest.testCasesList[i].getPath();
-				break;
-			} 
-		}
-		//System.out.println(testCasepath);
-		return testCasepath;
+		String testCasePath = this.findFile(this.testDirectoryPath + "\\Test_Cases", testCaseName + ".csv");
+		return testCasePath;
 	}
 	/**
 	 * Method reads the 'Page' column in the test case CSV file and
@@ -268,7 +274,10 @@ public class Util extends CSV_Reader{
 	 * @throws IOException 
 	 */
 	public String getObjectMapFilePath(String pageName) throws IOException{
-		String objectMapFilePath = null;
+		objectMapFilePath = this.findFile(this.testDirectoryPath + "\\Object_Map", pageName + ".csv");
+		return objectMapFilePath;
+		
+		/*String objectMapFilePath = null;
 		for (int i=0; i<=runTest.objectMapsList.length-1; i++) {
 			String objectMapFileName = runTest.objectMapsList[i].getName();
 			//System.out.println(objectMapFileName);
@@ -278,8 +287,8 @@ public class Util extends CSV_Reader{
 				break;
 			}
 		}
-		//System.out.println(objectMapFilePath);
-		return objectMapFilePath;
+		System.out.println(objectMapFilePath);
+		return objectMapFilePath;*/
 	}
 	
 	public String findObjectMapFile(ArrayList<String> objectMapFileNames, File[] objectMapsList ){
@@ -335,27 +344,7 @@ public class Util extends CSV_Reader{
 		}
 		return locator_Value;
 	}
-	/**
-	 * Method reads the 'Page' column in the test case CSV file and
-	 * returns the filename in Test_Data folder where the page's test data is stored.
-	 * @param page name
-	 * @return test data filename
-	 * @throws IOException 
-	 */
-	public String getTestDataFilePath(String pageName) throws IOException{
-		String testDataFilePath = null;
-		for (int i=0; i<=runTest.testDataFilesList.length-1; i++) {
-			String testDataFileName = runTest.testDataFilesList[i].getName();
-			//System.out.println(objectMapFileName);
-			if(testDataFileName.equals("Data_" +pageName + ".csv")){
-				testDataFilePath = runTest.testDataFilesList[i].getPath();
-				//System.out.println(testDataFilePath);
-				break;
-			}
-		}
-		//System.out.println(objectMapFilePath);
-		return testDataFilePath;
-	}
+	
 	public boolean findIfDataTest(List<String[]> testCaseContent){
 		boolean isDataTest = false;
 		String[] testStepRow = null;
@@ -380,24 +369,19 @@ public class Util extends CSV_Reader{
     	}
 		return rowNumber;
 	}
-	public ArrayList<String> getDataTestData(String pageName, String objectName) throws Exception{
-		ArrayList<String> dataTestData =  new ArrayList<String>();
-		System.out.println(dataTestData);
-		testDataFileName = this.getTestDataFilePath(pageName);
-    	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
-        String[] testDataRow = null;
-        while((testDataRow = testDataFileReader.readNext()) != null){
-        	testDataFileObjectName = testDataRow[0];
-        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
-        		for(int i=1;i<testDataRow.length;i++){
-        			System.out.println(testDataRow[i]);
-        			dataTestData.add(testDataRow[i]);
-        		}
-    			break;
-        	}
-        }
-        testDataFileReader.close();
-		return dataTestData;
+	/**
+	 * Method reads the 'Page' column in the test case CSV file and
+	 * returns the filename in Test_Data folder where the page's test data is stored.
+	 * @param page name
+	 * @return test data file path
+	 * @throws IOException 
+	 */
+	public String getTestDataFilePath(String pageName) throws IOException{
+		testDataFilePath = this.findFile(this.testDirectoryPath + "\\Test_Data", "Data_" + pageName + ".csv");
+		return testDataFilePath;
+	}
+	public void setTestDataFilePath(String path){
+		testDirectoryPath  = path;
 	}
 	public String getTestData(String pageName, String objectName) throws Exception{
 		testDataFileName = this.getTestDataFilePath(pageName);
@@ -413,6 +397,7 @@ public class Util extends CSV_Reader{
         testDataFileReader.close();
 		return testData;
 	}
+	
 	public String getTestData(String pageName, String objectName, int dataTestIteration) throws Exception{
 		testDataFileName = this.getTestDataFilePath(pageName);
     	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
@@ -428,13 +413,32 @@ public class Util extends CSV_Reader{
         testDataFileReader.close();
 		return testData;
 	}
+	public ArrayList<String> getDataTestData(String pageName, String objectName) throws Exception{
+		ArrayList<String> dataTestData =  new ArrayList<String>();
+		System.out.println(dataTestData);
+		testDataFileName = this.getTestDataFilePath(pageName);
+    	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
+        String[] testDataRow = null;
+        while((testDataRow = testDataFileReader.readNext()) != null){
+        	testDataFileObjectName = testDataRow[0];
+        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
+        		for(int i=1;i<testDataRow.length;i++){
+        			System.out.println(testDataRow[i]);
+        			dataTestData.add(testDataRow[i]); 
+        		}
+    			break;
+        	}
+        }
+        testDataFileReader.close();
+		return dataTestData;
+	}
 	public  void executeAction(String pageName, String objectName, String action, String testData) throws Exception{
 		objectInfo = this.getObjectInfo(pageName, objectName);
 		locator_Type = this.getObjectLocatorType(objectInfo);
 		locator_Value = this.getObjectLocatorValue(objectInfo);
 		switch(action.toLowerCase()){
 			case "clickbutton":
-				LOGS.info("> Clicking button " + objectName + " on " + pageName);
+				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
 				clickButton(locator_Type, locator_Value, testData);
 				break;
 			case "typeinput":
@@ -469,9 +473,6 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Verifying text DOES NOT display: " + testData);
 				verifyTextNotPresent(locator_Type, locator_Value, testData);
 				break;
-			case "verifypopupdisplays":
-				verifyPopupDisplays();
-				break;
 			case "wait":
 				LOGS.info("> Waiting for: " + testData + " seconds");
 				waitForObject(testData);
@@ -492,6 +493,10 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
 				clickMenuItem(locator_Type, locator_Value, testData);
 				break;
+			case "verifypagetitle":
+				LOGS.info("> Verifying page title on: " + pageName);
+				verifyPageTitle(testData);
+				break;
 		}
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
@@ -511,12 +516,12 @@ public class Util extends CSV_Reader{
 	}
 	public void clickButton(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
 		WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
-		if(button.getText().equals(buttonText) && button.isEnabled()){
+		if(button.isEnabled()){
 			button.click();
 		}else{
 			failedTestsCounter++;
 			LOGS.info("Button: " + "\"" + buttonText + "\"" + " is not displayed or has changed position");
-			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Button is not displayed or has changed position"));
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Button is not displayed or has changed position"));
 			this.captureScreen(this.currentTestName);
 		}
 	}	
@@ -527,7 +532,7 @@ public class Util extends CSV_Reader{
 		}else{
 			failedTestsCounter++;
 			LOGS.info("Link is not displayed or has changed position");
-			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Link is not displayed or has changed position"));
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Link is not displayed or has changed position"));
 			this.captureScreen(this.currentTestName);
 		}
 	} 
@@ -535,7 +540,7 @@ public class Util extends CSV_Reader{
 		WebElement menuItem = driver.findElement(findObject(objectLocatorType, locatorValue));
 		((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);
 	}
-	public   void enterText(String objectLocatorType, String locatorValue, String text){
+	public   void enterText(String objectLocatorType, String locatorValue, String text) throws IOException{
 		WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
 		if(textBox.isDisplayed()){
 			textBox.sendKeys(text);
@@ -544,7 +549,7 @@ public class Util extends CSV_Reader{
 				failedTestsCounter++;
 				LOGS.info("Text does not match text entered");
 				try {
-					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Text does not match text entered"));
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text does not match text entered"));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -553,7 +558,7 @@ public class Util extends CSV_Reader{
 			failedTestsCounter++;
 			LOGS.info("Text box is not displayed or has changed position");
 			try {
-				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Text box is not displayed or has changed position"));
+				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text box is not displayed or has changed position"));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -569,14 +574,14 @@ public class Util extends CSV_Reader{
 			if(!selectedOption.equals("true")){
 				failedTestsCounter++;
 				try {
-					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Option does not match option selected"));
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Option does not match option selected"));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
 		}else{
 			LOGS.info("Select box is not displayed or has changed position");
-			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Select box is not displayed or has changed position"));
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Select box is not displayed or has changed position"));
 		}
 	}
 	public    void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData){
@@ -597,7 +602,7 @@ public class Util extends CSV_Reader{
 				failedTestsCounter++;
 				LOGS.info("Selected radio button does not match item selected");
 				try {
-					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Selected radio button does not match item selected"));
+					this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Selected radio button does not match item selected"));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -616,20 +621,19 @@ public class Util extends CSV_Reader{
 	         }
 	    }
 	}
-	public   void verifyPopupDisplays(){
-		/*if(!driver.getWindowHandle().isEmpty()){
-			suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "PASS");
-		}else{suiteXLS.setCellData("Test_Steps", "Result", currentTestStepRow, "FAIL");}*/
-	}
 	
 	public void verifyTextPresent(String objectLocatorType, String locatorValue, String testData){
 		try{
 			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
 			if(!textToVerify.equals(testData)){
-				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData));
+				failedTestsCounter++;
+				LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
+				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + "\"" + testData + "\""));
 				this.captureScreen(this.currentTestName);
 			}else if(textToVerify.isEmpty()){
-				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed"));
+				failedTestsCounter++;
+				LOGS.info("Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed");
+				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed"));
 				this.captureScreen(this.currentTestName);
 			}
 		}catch (IOException e) {
@@ -640,7 +644,7 @@ public class Util extends CSV_Reader{
 		try{
 			String text  = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
 			if(text.equals(testData)){
-				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Text IS displayed: " +  "\"" + text + "\""));
+				this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text IS displayed: " +  "\"" + text + "\""));
 				this.captureScreen(this.currentTestName);
 			}
 		}catch (IOException e) {
@@ -655,16 +659,42 @@ public class Util extends CSV_Reader{
 		JavascriptExecutor jse = (JavascriptExecutor)driver;
 		jse.executeScript("window.scrollBy(0,500)", "");
 	}
-	public  void checkErrorMessage(String objectLocatorType, String locatorValue, String testData){
-		WebElement errorMessage = driver.findElement(By.xpath(locatorValue.trim()));
+	public  void verifyPageTitle(String pageTitle) throws IOException{
+		String currentWindowTitle = driver.getTitle().toString();
+		if(!currentWindowTitle.isEmpty() && !currentWindowTitle.equals(pageTitle)){
+			failedTestsCounter++;
+			LOGS.info("Current page title: " +  "\"" + currentWindowTitle + "\"" + " does not match expected title: " + "\"" + pageTitle + "\"");
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Current page title: " +  "\"" + currentWindowTitle + "\"" + " does not match expected title: " + "\"" + pageTitle + "\""));
+			this.captureScreen(this.currentTestName);
+		}
+	}
+	public CharSequence getMainWindowHandle(){
+		String mainWindowHandle=driver.getWindowHandle();
+		return mainWindowHandle;
+	}
+	public void captureScreen(String currentTestName) throws IOException {
+		screenshotCounter++;
+		String path;
+	    try {
+	        File source = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+	        path = "./target/screenshots/" + source.getName();
+	        String screenshotFolderName = createFolder("C:\\AutomatedTests", "Screenshots").toString();
+	        String currentTestScreenshotFolderName = createFolder(screenshotFolderName, "\\" + currenDate).toString();
+	        FileUtils.copyFile(source, new File(currentTestScreenshotFolderName + "\\" + currentTestName + "_" + screenshotCounter + ".png")); 
+	    }
+	    catch(IOException e) {
+	        path = "Failed to capture screenshot: " + e.getMessage();
+	        LOGS.info("Failed to capture screenshot");
+			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Failed to capture screenshot"));
+			this.captureScreen(this.currentTestName);
+	    }
 	}
 	public  void appendText(String objectLocatorType, String locatorValue, String text){ 
 		driver.findElement(findObject(objectLocatorType, locatorValue)).sendKeys(text);
 		String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
 	}
-	public  By findObject(String objectLocatorType, String locatorValue) {
-		//switch (How.valueOf(objectLocatorType.toUpperCase())) {
-		switch (objectLocatorType.toUpperCase()) {
+	public  By findObject(String objectLocatorType, String locatorValue){
+		switch (objectLocatorType.toUpperCase()){
 			case "CLASS_NAME":
 				return By.className(locatorValue);
 			case "CSS":
@@ -684,47 +714,46 @@ public class Util extends CSV_Reader{
 			default:
 				throw new IllegalArgumentException(
 						"Cannot determine how to locate element " + locatorValue);
-			}
 		}
-	public  WebDriver launchBrowser(String browserName) throws URISyntaxException, IOException{
+	}
+	public  WebDriver launchBrowser(String browserName, String browserPath) throws URISyntaxException, IOException{
 		browserName = browserName.toLowerCase();
-		String browserPath = getBrowserPath(browserName);
+		//String browserPath = getBrowserPath(browserName);
 		switch (browserName){
 			case "firefox":
-				System.setProperty("webdriver.firefox.bin", browserPath );
-				driver = new FirefoxDriver();
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-				driver.manage().window().maximize();
-				LOGS.info("************Launching Firefox************");
-				break;
-			case "ie":
-				DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
-				capabilities.setCapability(InternetExplorerDriver.INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
-				capabilities.setCapability(InternetExplorerDriver.IGNORE_ZOOM_SETTING, true);
-				File getIEDriver = new File(getClass().getResource("/com/gravitant/utils/IEDriverServer.exe").toURI());
-				//URL getIEDriver = getClass().getResource("/com/gravitant/utils/IEDriverServer.exe");
-				System.out.println("Browser path: " + getIEDriver.getAbsolutePath());
-				System.setProperty("webdriver.ie.driver", getIEDriver.getAbsolutePath());
-				driver = new InternetExplorerDriver(capabilities);
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-				driver.manage().window().maximize();
-				LOGS.info("************Launching Internet Explorer************");
-				break;
-			case "chrome":
-				File pathToChromeDriver = new File(getClass().getResource("/com/gravitant/utils/chromedriver.exe").toURI());
-				System.out.println(pathToChromeDriver.getCanonicalPath());
-				System.setProperty("webdriver.chrome.driver", pathToChromeDriver.getAbsolutePath());
-				driver = new ChromeDriver();
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-				driver.manage().window().maximize();
-				LOGS.info("************ Launching Chrome browser************");
-				break;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-			default:
+				browserPath = browserPath + "\\" + "firefox.exe";
 				System.setProperty("webdriver.firefox.bin", browserPath);
 				driver = new FirefoxDriver();
 				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
+				LOGS.info("************Launching Firefox ************");
 				break;
+			case "chrome":
+				browserPath = browserPath + "\\" + "chromedriver.exe";
+				System.setProperty("webdriver.chrome.driver", browserPath);
+				driver = new ChromeDriver();
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				LOGS.info("************ Launching Chrome browser ************");
+				break;                     
+			case "ie":
+				DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+				capabilities.setCapability(InternetExplorerDriver.INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
+				capabilities.setCapability(InternetExplorerDriver.IGNORE_ZOOM_SETTING, true);
+				browserPath = browserPath + "\\" + "IEDriverServer.exe";
+				System.setProperty("webdriver.ie.driver", browserPath);
+				driver = new InternetExplorerDriver(capabilities);
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				LOGS.info("************ Launching Internet Explorer ************");
+				break;
+			case "headless":
+				driver = new HtmlUnitDriver();
+				((HtmlUnitDriver)driver).setJavascriptEnabled(true);
+				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				driver.manage().window().maximize();
+				LOGS.info("************ Launching headless test ************");
+				break;                     
 			}
 			return driver;
 	}
@@ -735,36 +764,6 @@ public class Util extends CSV_Reader{
 		driver.navigate().to(Url);
 		return Url;
 	}
-	
-	public  void verifyPageTitle(String pageTitle) throws IOException{
-		String currentWindowTitle = driver.getTitle().toString();
-		if(!currentWindowTitle.isEmpty() && currentWindowTitle.equals(pageTitle)){
-			this.writeFailedStepToResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepName, "Current page title: " +  "\"" + currentWindowTitle + "\"" + " does not match expected title: " + "\"" + pageTitle + "\""));
-			this.captureScreen(this.currentTestName);
-		}
-	}
-	public String getPath(){
-		String path =  getClass().getClassLoader().getResource(".").getPath().toString();
-		return path;
-	}
-	public CharSequence getMainWindowHandle(){
-		String mainWindowHandle=driver.getWindowHandle();
-		return mainWindowHandle;
-	}
-	public void captureScreen(String currentTestName) {
-		screenshotCounter++;
-		String path;
-	    try {
-	        File source = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-	        path = "./target/screenshots/" + source.getName();
-	        String screenshotFolderName = createFolder("C:\\AutomatedTests", "Screenshots").toString();
-	        String currentTestScreenshotFolderName = createFolder(screenshotFolderName, "\\" + currenDate).toString();
-	        FileUtils.copyFile(source, new File(currentTestScreenshotFolderName + "\\" + currentTestName + "_" + screenshotCounter + ".png")); 
-	    }
-	    catch(IOException e) {
-	        path = "Failed to capture screenshot: " + e.getMessage();
-	    }
-	} 
 	public  void closeBrowser(){
 		driver.quit();
 	}
@@ -849,75 +848,38 @@ public class Util extends CSV_Reader{
             if (f.isDirectory() && f!=null){
             	File[] filesInFolder = f.listFiles();
             	if(Arrays.asList(filesInFolder).contains(fileName)){
-            		System.out.println("yes");
+            		//System.out.println("yes");
             	}
             }
         }
 		return filePath;
 	}
-	public void login(String userName, String password) throws Exception{
-		LandingPage landingPage = PageFactory.initElements(driver, LandingPage.class);
-		landingPage.clickSigninButton();
-		LoginPage loginPage = PageFactory.initElements(driver, LoginPage.class);
-		loginPage.enterUsername(userName);
-		loginPage.enterPassword(password);
-		loginPage.clickLoginButton();
-	}
 	
-	public void login() throws Exception{
-		CSVReader testCaseReader = new CSVReader(new FileReader(this.getTestCasePath("Login")));
-		String objectMapFileName = null;
-		String testDataFileName = null;
-		String [] testStepRow = null;
-		String testStep = null;
-		String testStepObjectName = null;
-		while((testStepRow = testCaseReader.readNext()) != null){
-			testStep = testStepRow[1];
-        	pageName = testStepRow[2];
-        	testStepObjectName = testStepRow[3];
-        	action = testStepRow[4];
-        	objectMapFileName = this.getObjectMapFilePath(pageName);
-        	testDataFileName = this.getTestDataFilePath(pageName);
-        	String[] objectInfo = null;
-			if(!testStep.equals("Step")){
-				if(objectMapFileName != null){
-					//objectInfo = this.getObjectInfo(pageName, testStepObjectName);
-		    		objectInfo = this.getObjectInfo(objectMapFileName, testStepObjectName);
-		    		locator_Type = this.getObjectLocatorType(objectInfo);
-		    		locator_Value = this.getObjectLocatorValue(objectInfo);
-	    			testData = this.getTestData(testDataFileName, testStepObjectName);
-	        		if(testDataFileName != null){
-	        			testData = this.getTestData(testDataFileName, testStepObjectName);
-		        		System.out.println(testData);
-	        		}
-	    			this.executeAction(pageName, testStepObjectName, action,testData);
-		    	}
-			}
-		}
-		LOGS.info("************Logging into QA1************");
-		testCaseReader.close();
-	}
-	public String[] reportEvent(String testCaseName, String testStep, String message) throws IOException{
+	public String[] reportEvent(String testCaseName, int testStepNumber, String testStep, String message) throws IOException{
 		failedStepCounter++;
-		String[] report = {testCaseName, String.valueOf(failedStepCounter), testStep, message};
+		String[] report = {testCaseName, String.valueOf(testStepNumber), testStep, message};
 		return report;
 	}
 
-	public void writeFailedStepToResultsFile(String resultFilePath, String[] string){
+	public void writeFailedStepToResultsFile(String resultFilePath, String[] resultMessage){
+		//System.out.println(Arrays.toString(resultMessage));
 		BufferedWriter writer = null;        
-	    try {   
+	    try{
 	        writer = new BufferedWriter(new FileWriter(resultFilePath));
-	        writer.append("Test Case: " + string[0]);
+	        writer.append("Test Case: " + resultMessage[0]);
     		writer.newLine();
     		writer.append("\t");
-    		writer.append("Failed Test Step(s): ");
+    		writer.append("Failed Test Step(s):");
     		writer.newLine();
     		writer.append("\t\t");
-    		writer.append(string[1]).
-    		append(". ").
-    		append(string[2]).
-    		append(" - ").
-    		append(string[3]);
+    		writer.append("Step No.");
+    		writer.append(resultMessage[1]).
+    		append(": ").
+    		append(resultMessage[2]);
+    		writer.newLine();
+    		writer.append("\t\t\t").
+    		append(" ACTUAL RESULT: ").
+    		append(resultMessage[3]);
 	    } catch (FileNotFoundException ex) {
 	        ex.printStackTrace();
 	    } catch (IOException ex) {
@@ -942,6 +904,7 @@ public class Util extends CSV_Reader{
 		String string1 = null;
 		String string2 = null;
 		String string3 = null;
+		String string4 = null;
 		try {
 			reader = new BufferedReader(new FileReader(this.currentResultFilePath));
 			String line;
