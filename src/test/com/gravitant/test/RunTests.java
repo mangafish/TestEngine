@@ -92,13 +92,14 @@ public class RunTests{
 		currentResultFilePath =util.createResultsFile(currentResultsFolderName, currentTime);//create test results file
 		util.setCurrentResultFilePath(currentResultFilePath);
 		currentResultFileName = currentResultFilePath;
+		util.setCurrentResultFolderPath(currentResultsFolderName);
 		util.setCurrentResultFileName(currentResultFileName);
 		util.setCurrentDate(currentDate);
 		util.setCurrentTime(currentTime);
 		//******* Launch browser and navigate to Url *******//
 		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "warn");
-		util.launchBrowser(browserType, browserPath);
+		util.launchBrowser(browserType);
 		util.navigateToUrl(environment);
 		//*******Get test cases to run from Tests_To_Run.txt *************//
         testsToRun = util.getTestsToRun();
@@ -176,7 +177,7 @@ public class RunTests{
 			    LOGS.info("*********** End data test ************");
 			    }else{
 			    	/*******If this is NOT a data test, execute test steps in the test case sequentially*******/
-			    	for (int j=1; j<testCaseContent.size(); j++){
+			    	for(int j=1; j<testCaseContent.size(); j++){
 				    	testStepRow = testCaseContent.get(j);
 					    testStepNumber = Integer.parseInt(testStepRow[0]);
 					    testStepPageName = testStepRow[2];
@@ -189,14 +190,15 @@ public class RunTests{
 					    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 					}
 			    }
-		util.writeTestResultsFile();
 			}else{
 				/*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******/
 				LOGS.info("**** Test case: " + "\"" + currentTest + "\"" +  " does not exist in Test_Cases folder ****");
 				continue;
 			}
 		}
-		//util.closeBrowser();
+		util.setFailedTestsNumber();
+		util.writeTestResultsFile();
+		util.closeBrowser();
 	}
 }
 	 
