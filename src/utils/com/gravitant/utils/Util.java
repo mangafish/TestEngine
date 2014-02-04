@@ -15,7 +15,9 @@ import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -44,6 +46,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.swing.JOptionPane;
+
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.gravitant.test.RunTests;
@@ -54,7 +58,7 @@ public class Util extends CSV_Reader{
 	RunTests runTest = new RunTests();
 	public  WebDriver driver;
 	public String filePath = null;
-	public String testDirectoryPath  = null;
+	public String testEnginePath  = null;
 	public String testConfigFilePath  = null;
 	public String testsToRunFilePath  = null;
 	public String fileNameToSearch = null;
@@ -79,6 +83,8 @@ public class Util extends CSV_Reader{
     public String testData = null;
     public String currenDate = null;
     public String currentTime = null;
+    protected String automatedTestsFolderPath = null;
+    protected int globalWaitTime = 0;
     int currentTestStepNumber = 0;
     int currentTestStepRow;
     int totalTestNumber = 0;
@@ -92,19 +98,26 @@ public class Util extends CSV_Reader{
 	/**Method gets the location of the exe jar file
 	 * @return String - path to the automated tests directory 
 	 */
-	public String getTestDirectoryPath(){
+	public String getTestEnginePath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
 		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
-        String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.5"));
-        this.setTestDirectoryPath(testConfigDirectory);
+        //String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.5"));
+		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_3.0"));
+        this.setTestEnginePath(testConfigDirectory);
         return testConfigDirectory;
+	}
+	public void setTestEnginePath(String path){
+		testEnginePath  = path;
 	}
 	/**Method sets the path to the automated tests directory 
 	 * @return null
 	 */
 	public void setTestDirectoryPath(String path){
-		testDirectoryPath  = path;
+		automatedTestsFolderPath  = path;
+	}
+	public void setGlobalWaitTime(int time){
+		globalWaitTime = time;
 	}
 	public String findFile(String parentDirectory, String fileToFind){
 		fileToFind = fileToFind.toLowerCase();
@@ -152,7 +165,7 @@ public class Util extends CSV_Reader{
 	
 	public String findDirectory(String directoryToFind){
 		String directoryPath = null;
-		File root = new File(this.testDirectoryPath);
+		File root = new File(this.automatedTestsFolderPath);
         File[] list = root.listFiles();
         for (File f : list) {
             if (f.isDirectory() && f!=null){
@@ -174,7 +187,7 @@ public class Util extends CSV_Reader{
 	 * @throws IOException
 	 */
 	public String getTestConfigProperty(String property) throws IOException{
-		String testConfigFilePath = this.findFile(this.testDirectoryPath, "Test_Config.txt");
+		String testConfigFilePath = this.findFile(this.testEnginePath, "Test_Config.txt");
 		BufferedReader readTestConfigFile = new BufferedReader(new FileReader(testConfigFilePath));
 		String currentline = null;
 		String propertyValue = null;
@@ -195,7 +208,7 @@ public class Util extends CSV_Reader{
 	 * @throws IOException
 	 */
 	public List<String> getTestsToRun() throws IOException{
-		String testsToRunPath = this.findFile(this.testDirectoryPath, "TestsToRun.txt");
+		String testsToRunPath = this.findFile(this.testEnginePath, "TestsToRun.txt");
 		BufferedReader readTestsToRunFile = new BufferedReader(new FileReader(testsToRunPath));
 		String currentline = null;
 		List<String> testsToRun = new ArrayList<>();
@@ -214,7 +227,7 @@ public class Util extends CSV_Reader{
 	 */
 	public boolean verifyTestCaseExists(String testName){
 		boolean testCaseExists = false;
-		String testCasePath = this.findFile(this.testDirectoryPath + "\\Test_Cases", testName + ".csv");
+		String testCasePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Cases", testName + ".csv");
 		if(!testCasePath.equals(null) && testCasePath.contains(testName)){
        		testCaseExists = true;
        	}else{
@@ -278,7 +291,7 @@ public class Util extends CSV_Reader{
 	 * @return String path to test case.
 	 */
 	public String getTestCasePath(String testCaseName){
-		String testCasePath = this.findFile(this.testDirectoryPath + "\\Test_Cases", testCaseName + ".csv");
+		String testCasePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Cases", testCaseName + ".csv");
 		return testCasePath;
 	}
 	/**
@@ -289,7 +302,7 @@ public class Util extends CSV_Reader{
 	 * @throws IOException 
 	 */
 	public String getObjectMapFilePath(String pageName) throws IOException{
-		objectMapFilePath = this.findFile(this.testDirectoryPath + "\\Object_Map", pageName + ".csv");
+		objectMapFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Objects", pageName + ".csv");
 		return objectMapFilePath;
 	}
 	
@@ -379,11 +392,11 @@ public class Util extends CSV_Reader{
 	 * @throws IOException 
 	 */
 	public String getTestDataFilePath(String pageName) throws IOException{
-		testDataFilePath = this.findFile(this.testDirectoryPath + "\\Test_Data", "Data_" + pageName + ".csv");
+		testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
 		return testDataFilePath;
 	}
 	public void setTestDataFilePath(String path){
-		testDirectoryPath  = path;
+		automatedTestsFolderPath  = path;
 	}
 	public String getTestData(String pageName, String objectName) throws Exception{
 		testDataFileName = this.getTestDataFilePath(pageName);
@@ -449,7 +462,7 @@ public class Util extends CSV_Reader{
 				break;
 			case "clicklink":
 				LOGS.info("> Clicking link: " + objectName + " on " + pageName);
-				clickLink(locator_Type, locator_Value);
+				clickLink(locator_Type, locator_Value, testData);
 				break;
 			case "selectlistitem":
 				LOGS.info("> Selecting combo item: " + "\"" + testData + "\"" + " in " + objectName);
@@ -501,6 +514,24 @@ public class Util extends CSV_Reader{
 				break;
 		}
 	}
+	public void waitForObject(String time) throws Exception{
+		int seconds = Integer.parseInt(time);
+		Thread.sleep(seconds *1000);
+	}
+	public boolean waitForObject(String objectName, String objectLocatorType, String locatorValue){
+		boolean objectExists = false;
+		WebDriverWait wait = new WebDriverWait(driver, this.globalWaitTime);
+		for(int i=0; i<=this.globalWaitTime; i++){
+			try{
+				wait.until(ExpectedConditions.presenceOfElementLocated(findObject(objectLocatorType, locatorValue)));
+				objectExists = true;
+			}catch(Exception e){
+				this.msgbox("Cannot find: " + objectName + "\n Timeout limit reached.");
+				e.printStackTrace();
+			}
+		}
+		return objectExists;
+	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
@@ -516,62 +547,57 @@ public class Util extends CSV_Reader{
 		}
 		return cellData;
 	}
-	public void clickButton(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
-		WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
-		if(button.isEnabled()){
+	public void clickButton(String objectLocatorType, String locatorValue, String testData) throws IOException{
+		if(waitForObject(testData, objectLocatorType, locatorValue) == true){
+			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
 			button.click();
 		}else{
-			LOGS.info("Button: " + "\"" + buttonText + "\"" + " is not displayed or has changed position");
-			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Button is not displayed or has changed position"));
+			LOGS.info("Button is not displayed or has changed position");
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, testData + " button is not displayed or has changed position"));
 			this.captureScreen(this.currentTestName);
 		}
 	}	
-	public   void clickLink(String objectLocatorType, String locatorValue) throws Exception{
-		WebElement link = driver.findElement(findObject(objectLocatorType, locatorValue));
-		if(link.isDisplayed()){
+	public void clickLink(String objectLocatorType, String locatorValue, String testData) throws Exception{
+		if(waitForObject(testData, objectLocatorType, locatorValue) == true){
+			WebElement link = driver.findElement(findObject(objectLocatorType, locatorValue));
 			link.click();
 		}else{
 			LOGS.info("Link is not displayed or has changed position");
-			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Link is not displayed or has changed position"));
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, testData + " link is not displayed or has changed position"));
 			this.captureScreen(this.currentTestName);
 		}
 	} 
-	public  void clickMenuItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
-		WebElement menuItem = driver.findElement(findObject(objectLocatorType, locatorValue));
-		((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);
+	public void clickMenuItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
+		if(waitForObject(testData, objectLocatorType, locatorValue) == true){
+			WebElement menuItem = driver.findElement(findObject(objectLocatorType, locatorValue));
+			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);
+		}else{
+			LOGS.info("Link is not displayed or has changed position");
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, testData + " menu item is not displayed or has changed position"));
+		}
 	}
-	public   void enterText(String objectLocatorType, String locatorValue, String text) throws IOException{
-		WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
-		if(textBox.isDisplayed()){
+	public void enterText(String objectLocatorType, String locatorValue, String text) throws IOException, InterruptedException{
+		if(waitForObject("Text box", objectLocatorType, locatorValue) == true){
+			WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+			textBox.clear();
 			textBox.sendKeys(text);
-			String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
-			if(!enteredText.trim().equals(text)){
-				LOGS.info("Text does not match text entered");
-				try {
-					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text does not match text entered"));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			//Thread.sleep(2000);
+			//String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
 		}else{
 			LOGS.info("Text box is not displayed or has changed position");
-			try {
-				this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text box is not displayed or has changed position"));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text box is not displayed or has changed position"));
 			this.captureScreen(this.currentTestName);
 		}
 	}
 	public void selectListBoxItem(String objectLocatorType, String locatorValue, String optionToSelect) throws IOException{
-		Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
-		if(selectBox.getOptions() != null){
+		if(waitForObject("Select box", objectLocatorType, locatorValue) == true){
+			Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
 			selectBox.selectByVisibleText(optionToSelect);
 			String selectedOption = selectBox.getFirstSelectedOption().getAttribute("selected");
 			//System.out.println("selected option: " + selectedOption);
 			if(!selectedOption.equals("true")){
 				try {
-					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Option does not match option selected"));
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, optionToSelect + " does not match option selected"));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -579,76 +605,89 @@ public class Util extends CSV_Reader{
 		}else{
 			LOGS.info("Select box is not displayed or has changed position");
 			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Select box is not displayed or has changed position"));
+			this.captureScreen(this.currentTestName);
 		}
 	}
-	public    void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData){
+	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
 		WebElement radioButton = null;
-		String locatorwithTestData = null;
 		switch(objectLocatorType){
 			case "id":
+				waitForObject("Radio button", objectLocatorType, locatorValue.trim());
 				radioButton = driver.findElement(By.id(locatorValue.trim()));
 			case "xpath":
-				locatorwithTestData = locatorValue.replace(locatorValue.substring(16, locatorValue.length()), testData) + "']";
-				radioButton = driver.findElement(By.xpath(locatorwithTestData));
-		}
-		if(radioButton.isDisplayed()){
-			radioButton.click();
-			String selectedRadioButton = driver.findElement(By.xpath(locatorwithTestData)).getAttribute("value");
-			//String selectedRadioButton = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
-			if(!selectedRadioButton.trim().equals(testData)){
-				LOGS.info("Selected radio button does not match item selected");
-				try {
-					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Selected radio button does not match item selected"));
-				} catch (IOException e) {
+				try{
+					waitForObject("Radio button", objectLocatorType, "//input[@value=" + "'" + testData + "']");
+					radioButton = driver.findElement(By.xpath("//input[@value=" + "'" + testData + "']")); 
+				}catch(Exception e){
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Radio button is not displayed or has changed position"));
+					this.captureScreen(this.currentTestName);
 					e.printStackTrace();
 				}
+		}
+		if(waitForObject("Radio button", objectLocatorType, "//input[@value=" + "'" + testData + "']") == true){
+			radioButton.click();
+		}
+		String selectedRadioButton = driver.findElement(By.xpath("//input[@value=" + "'" + testData + "']")).getAttribute("value");
+		if(!selectedRadioButton.trim().equals(testData)){
+			LOGS.info("Selected radio button does not match item selected");
+			try {
+				this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Selected radio button does not match radio button to select"));
+				this.captureScreen(this.currentTestName);
+			}catch (IOException e){
+				e.printStackTrace();
 			}
 		}
 	}
-	public   void switchToPopup() throws InterruptedException{
-		 Set<String> windowHandles = driver.getWindowHandles();
-		 Iterator<String> windows = windowHandles.iterator();
-	    while(windows.hasNext())
-	    {
+	public void switchToPopup() throws InterruptedException{
+		Set<String> windowHandles = driver.getWindowHandles();
+		Iterator<String> windows = windowHandles.iterator();
+	    while(windows.hasNext()){
 	         String popupHandle=windows.next().toString();
-	         if(!popupHandle.contains(getMainWindowHandle()))
-	         {
+	         if(!popupHandle.contains(getMainWindowHandle())){
 	             driver.switchTo().window(popupHandle);
 	         }
 	    }
 	}
 	
 	public void verifyTextPresent(String objectLocatorType, String locatorValue, String testData){
-		try{
+		if(waitForObject("Text", objectLocatorType, locatorValue) == true){
 			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
-			if(!textToVerify.equals(testData)){
+			System.out.println(textToVerify);
+			if(!textToVerify.toLowerCase().equals(testData.trim().toLowerCase())){
 				LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
-				this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + "\"" + testData + "\""));
-				this.captureScreen(this.currentTestName);
+				try {
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + "\"" + testData + "\""));
+					this.captureScreen(this.currentTestName);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}else if(textToVerify.isEmpty()){
 				LOGS.info("Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed");
-				this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed"));
-				this.captureScreen(this.currentTestName);
+				try {
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed"));
+					this.captureScreen(this.currentTestName);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-		}catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 	public void verifyTextNotPresent(String objectLocatorType, String locatorValue, String testData) throws IOException {
-		try{
-			String text  = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
-			if(text.equals(testData)){
-				this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text IS displayed: " +  "\"" + text + "\""));
-				this.captureScreen(this.currentTestName);
+		if(waitForObject("Text", objectLocatorType, locatorValue) == true){
+			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
+			System.out.println(textToVerify);
+			if(textToVerify.toLowerCase().equals(testData.trim().toLowerCase())){
+				LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
+				try {
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text: " +  "\"" + textToVerify + "\""  + " IS displayed"));
+					this.captureScreen(this.currentTestName);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-		}catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
-	public   void waitForObject(String time) throws Exception{
-		int seconds = Integer.parseInt(time);
-		Thread.sleep(seconds *1000);
-	}
+
 	public   void scrollDown(String objectLocatorType, String locatorValue){
 		JavascriptExecutor jse = (JavascriptExecutor)driver;
 		jse.executeScript("window.scrollBy(0,500)", "");
@@ -682,9 +721,15 @@ public class Util extends CSV_Reader{
 			this.captureScreen(this.currentTestName);
 	    }
 	}
-	public  void appendText(String objectLocatorType, String locatorValue, String text){ 
-		driver.findElement(findObject(objectLocatorType, locatorValue)).sendKeys(text);
-		String enteredText = driver.findElement(findObject(objectLocatorType, locatorValue)).getAttribute("value");
+	public  void appendText(String objectLocatorType, String locatorValue, String text) throws IOException{
+		if(waitForObject("Text box", objectLocatorType, locatorValue) == true){
+			WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+			textBox.sendKeys(text);
+		}else{
+			LOGS.info("Text box is not displayed or has changed position");
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text box is not displayed or has changed position"));
+			this.captureScreen(this.currentTestName);
+		}
 	}
 	public  By findObject(String objectLocatorType, String locatorValue){
 		switch (objectLocatorType.toUpperCase()){
@@ -714,18 +759,18 @@ public class Util extends CSV_Reader{
 		String browserPath = null;
 		switch (browserName){
 			case "firefox":
-				browserPath = this.testDirectoryPath + "\\Firefox_Selenium\\" + "firefox.exe";
+				browserPath = this.testEnginePath + "\\Firefox_Selenium\\" + "firefox.exe";
 				System.setProperty("webdriver.firefox.bin", browserPath);
 				driver = new FirefoxDriver();
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
 				LOGS.info("************Launching Firefox ************");
 				break;
 			case "chrome":
-				browserPath = this.testDirectoryPath + "\\Chrome_Selenium\\" + "chromedriver.exe";
+				browserPath = this.testEnginePath + "\\Chrome_Selenium\\" + "chromedriver.exe";
 				System.setProperty("webdriver.chrome.driver", browserPath);
 				driver = new ChromeDriver();
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
 				LOGS.info("************ Launching Chrome browser ************");
 				break;                     
@@ -733,10 +778,10 @@ public class Util extends CSV_Reader{
 				DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
 				capabilities.setCapability(InternetExplorerDriver.INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
 				capabilities.setCapability(InternetExplorerDriver.IGNORE_ZOOM_SETTING, true);
-				browserPath = this.testDirectoryPath + "\\IE_Selenium\\" + "IEDriverServer.exe";
+				browserPath = this.testEnginePath + "\\IE_Selenium\\" + "IEDriverServer.exe";
 				System.setProperty("webdriver.ie.driver", browserPath);
 				driver = new InternetExplorerDriver(capabilities);
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
 				LOGS.info("************ Launching Internet Explorer ************");
 				break;
@@ -751,11 +796,9 @@ public class Util extends CSV_Reader{
 			return driver;
 	}
 	public  String navigateToUrl(String environment) throws MalformedURLException{
-		String Url = "https://qa1.mygravitant.com";;
 		environment = environment.trim().toLowerCase();
-		Url = Url.replace("qa1", environment);
-		driver.navigate().to(Url);
-		return Url;
+		driver.navigate().to(environment);
+		return environment;
 	}
 	public  void closeBrowser() throws Exception{
 		driver.quit();
@@ -875,6 +918,9 @@ public class Util extends CSV_Reader{
         }
 		return filePath;
 	}
+	private void msgbox(String message){
+		   JOptionPane.showMessageDialog(null, message);
+		}
 	public int getFailedTestStepsNumber(){
 		return failedStepCounter;
 	}
