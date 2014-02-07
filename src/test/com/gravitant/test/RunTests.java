@@ -18,13 +18,12 @@ import org.apache.log4j.Logger;
 
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.gravitant.test.RunTests;
 import com.gravitant.utils.CSV_Reader;
 import com.gravitant.utils.Util;
 
 public class RunTests{
-	static Logger LOGS = Logger.getLogger(RunTests.class);
 	public String testEnginePath  = null;
-	//public String testDirectoryFilePath =  null;
 	public String testConfigFilePath  = null;
 	public String testsToRunFilePath = null;
 	public java.util.List<String>  testsToRun = null;
@@ -88,6 +87,13 @@ public class RunTests{
 		browserType = util.getTestConfigProperty("browserType");
 		automatedTestsFolderPath = util.getTestConfigProperty("Path to Automated Tests");
 		globalWaitTime = Integer.parseInt(util.getTestConfigProperty("Wait time(seconds)"));
+		//******* Set log file location ****************//
+		System.setProperty("TestEngineLog", automatedTestsFolderPath + "\\TestEngineLog\\TestEngineLog.log");
+		//System.out.println(System.getProperty("TestEngineLog"));
+		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "warn");
+		Logger LOGS = Logger.getLogger(RunTests.class.getName());
+		util.setLogger();
 		/*******Create test results folder ****************/
   		testResultsFolderName = util.createFolder(automatedTestsFolderPath, "Test_Results").toString();//create test results folder
 		currentResultsFolderName = util.createFolder(testResultsFolderName, "Results_" + currentDate).toString();//create folder with todays date within above folder
@@ -211,6 +217,7 @@ public class RunTests{
 		}
 		util.setFailedTestsNumber();
 		util.writeTestResultsFile();
+		util.killBrowserProcess(browserType);
 		util.closeBrowser();
 	}
 }
