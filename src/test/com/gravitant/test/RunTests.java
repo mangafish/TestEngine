@@ -30,7 +30,7 @@ public class RunTests{
     public String objectMapFilePath;
     public String objectMapFileName = null;
     public String testDataFilePath;
-    public String testDataFileName = null;
+    public String testDataFiles = null;
     public String testDataFileObjectName = null;
     public String testStepObjectName = null;
     public String[] componentAndTestCase = null;
@@ -119,10 +119,9 @@ public class RunTests{
         util.setTestDirectoryPath(automatedTestsFolderPath);
         util.setGlobalWaitTime(globalWaitTime);
 		for(int i=0; i<=testsToRun.size()-1; i++){
-			//componentAndTestCase =testsToRun.get(i).split("/");
 			componentName = util.getComponentName(testsToRun.get(i));
 			currentTest = util.getTestCaseName(testsToRun.get(i));
-			testDataFileName = util.getTestDataFilePath(testsToRun.get(i));
+			testDataFiles = util.getTestDataFiles(testsToRun.get(i));
 			//System.out.println(currentTest);
 			/*******If test case exists in Test_Cases folder, read the file and get the page name and action for each object in the test steps*******/
 			if(util.verifyTestCaseExists(currentTest) == true){

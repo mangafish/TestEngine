@@ -90,6 +90,7 @@ public class Util extends CSV_Reader{
     public String currentPageName = null;
     public String currentTestObjectName = null;
     public String objectMapFileName = null;
+    public String testDataFiles = null;
     public String testDataFileName = null;
     public String testData = null;
     public String currenDate = null;
@@ -134,23 +135,26 @@ public class Util extends CSV_Reader{
 	public void setGlobalWaitTime(int time){
 		globalWaitTime = time;
 	}
-	public void getComponentAndTestCaseName(String currentLine){
+	public String getComponentAndTestCaseName(String currentLine){
 		if(currentLine.contains(",")){
 			String[] splitCurrentLine = currentLine.split(",");
-			this.componentAndTestCase = splitCurrentLine[0];
+			componentAndTestCase = splitCurrentLine[0];
 		}else{
-			this.componentAndTestCase = currentLine;
+			componentAndTestCase = currentLine;
 		}
-		//return componentAndTestCase;
+		return componentAndTestCase;
 	}
 	public String getComponentName(String currentLine){
-		String[] splitComponentAndTestCase = currentLine.split("/");
-		componentName = splitComponentAndTestCase[0];
+		String componentAndTestCase = this.getComponentAndTestCaseName(currentLine);
+		String[] splitComponentAndTestCase = componentAndTestCase.split("/");
+		this.componentName = splitComponentAndTestCase[0];
 		return componentName;
 	}
 	public String getTestCaseName(String currentLine){
-		String[] splitComponentAndTestCase = currentLine.split("/");
-		return currentTestName = splitComponentAndTestCase[1];
+		String componentAndTestCase = this.getComponentAndTestCaseName(currentLine);
+		String[] splitComponentAndTestCase = componentAndTestCase.split("/");
+		currentTestName = splitComponentAndTestCase[1];
+		return currentTestName;
 	}
 	public String findFile(String parentDirectory, String fileToFind){
 		fileToFind = fileToFind.toLowerCase();
@@ -425,30 +429,39 @@ public class Util extends CSV_Reader{
 	 * @throws IOException 
 	 */
 	public String getTestDataFilePath(String pageName) throws IOException{
-		if(pageName.contains(",")){
-			String[] splitCurrentLine = pageName.split(",");
-			this.componentAndTestData = splitCurrentLine[1];
-			String[] splitComponentAndTestData = componentAndTestData.split("/");
-			testDataFileName = splitComponentAndTestData[1];
-			testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", testDataFileName + ".csv");
-		}else{
-			testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
-		}
+		testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data" + "\\" + this.componentName, pageName + ".csv");
 		return testDataFilePath;
 	}
-	/*public String getTestDataFilePath(String currentLine){
-		if(currentLine.contains(",")){
-			String[] splitCurrentLine = currentLine.split(",");
-			this.componentAndTestCase = splitCurrentLine[0];
+	public String getTestDataFiles(String currentLine){
+		if(currentLine.contains("data")){
+			String[] splitCurrentLine = currentLine.split("data=");
+			this.testDataFiles = splitCurrentLine[1];
+		}else{
+			this.testDataFiles = null;
 		}
-		testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
-		return testDataFilePath;
-	}*/
+		return testDataFiles;
+	}
 	public void setTestDataFilePath(String path){
 		automatedTestsFolderPath  = path;
 	}
 	public String getTestData(String pageName, String objectName) throws Exception{
-		testDataFileName = this.getTestDataFilePath(pageName);
+		String[] splitTestDataFiles = null;
+		if(testDataFiles !=null && testDataFiles.contains(",")){
+			splitTestDataFiles = testDataFiles.split(",");
+			for(int i=0;i<splitTestDataFiles.length;i++){
+				if(splitTestDataFiles[i].contains(pageName)){
+					String[] fileName = splitTestDataFiles[i].split("/");
+					testDataFileName = this.getTestDataFilePath(fileName[1]);
+					break;
+				}
+			}
+		}
+		if(testDataFiles !=null && testDataFiles.contains("/") && testDataFiles.contains(pageName)){
+			splitTestDataFiles = testDataFiles.split("/");
+			testDataFileName = this.getTestDataFilePath(splitTestDataFiles[1]);
+		}else{
+			testDataFileName = this.getTestDataFilePath(pageName );
+		}
     	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
         String[] testDataRow = null;
         while((testDataRow = testDataFileReader.readNext()) != null){
