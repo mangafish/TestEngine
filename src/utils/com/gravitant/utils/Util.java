@@ -22,6 +22,7 @@ import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -79,6 +80,9 @@ public class Util extends CSV_Reader{
     public String pageName = null;
     public String currentResultsFolderPath = null;
     public String currentResultFilePath = null;
+    public String componentAndTestCase = null;
+    public String componentAndTestData = null;
+    public String componentName = null;
     public String currentTestName = null;
     public String currentFilePath = null;
     public String currentFileName = null;
@@ -129,6 +133,24 @@ public class Util extends CSV_Reader{
 	}
 	public void setGlobalWaitTime(int time){
 		globalWaitTime = time;
+	}
+	public void getComponentAndTestCaseName(String currentLine){
+		if(currentLine.contains(",")){
+			String[] splitCurrentLine = currentLine.split(",");
+			this.componentAndTestCase = splitCurrentLine[0];
+		}else{
+			this.componentAndTestCase = currentLine;
+		}
+		//return componentAndTestCase;
+	}
+	public String getComponentName(String currentLine){
+		String[] splitComponentAndTestCase = currentLine.split("/");
+		componentName = splitComponentAndTestCase[0];
+		return componentName;
+	}
+	public String getTestCaseName(String currentLine){
+		String[] splitComponentAndTestCase = currentLine.split("/");
+		return currentTestName = splitComponentAndTestCase[1];
 	}
 	public String findFile(String parentDirectory, String fileToFind){
 		fileToFind = fileToFind.toLowerCase();
@@ -403,11 +425,26 @@ public class Util extends CSV_Reader{
 	 * @throws IOException 
 	 */
 	public String getTestDataFilePath(String pageName) throws IOException{
-		testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
+		if(pageName.contains(",")){
+			String[] splitCurrentLine = pageName.split(",");
+			this.componentAndTestData = splitCurrentLine[1];
+			String[] splitComponentAndTestData = componentAndTestData.split("/");
+			testDataFileName = splitComponentAndTestData[1];
+			testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", testDataFileName + ".csv");
+		}else{
+			testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
+		}
 		return testDataFilePath;
 	}
+	/*public String getTestDataFilePath(String currentLine){
+		if(currentLine.contains(",")){
+			String[] splitCurrentLine = currentLine.split(",");
+			this.componentAndTestCase = splitCurrentLine[0];
+		}
+		testDataFilePath = this.findFile(this.automatedTestsFolderPath + "\\Test_Data", "Data_" + pageName + ".csv");
+		return testDataFilePath;
+	}*/
 	public void setTestDataFilePath(String path){
-
 		automatedTestsFolderPath  = path;
 	}
 	public String getTestData(String pageName, String objectName) throws Exception{
@@ -424,7 +461,6 @@ public class Util extends CSV_Reader{
         testDataFileReader.close();
 		return testData;
 	}
-	
 	public String getTestData(String pageName, String objectName, int dataTestIteration) throws Exception{
 		testDataFileName = this.getTestDataFilePath(pageName);
     	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
@@ -547,13 +583,21 @@ public class Util extends CSV_Reader{
 		int seconds = Integer.parseInt(time);
 		Thread.sleep(seconds *1000);
 	}
+	/*public Boolean hasMoreThanOneOption(WebDriver driver, String objectLocatorType, String locatorValue){
+		boolean moreThanOneOption = false;
+		if(driver.findElements(By.xpath(locatorValue)).size() > 1){
+			moreThanOneOption = true;
+		}
+		return moreThanOneOption;
+	}*/
+	
 	public boolean waitForObject(String objectName, String objectLocatorType, String locatorValue) throws IOException{
 		WebDriverWait wait = new WebDriverWait(driver, this.globalWaitTime);
 		boolean objectExists = false;
 		try{
-			wait.until(ExpectedConditions.presenceOfElementLocated(findObject(objectLocatorType, locatorValue)));
-			WebElement element = driver.findElement(findObject(objectLocatorType, locatorValue));
-			objectExists = true;
+			  wait.until(ExpectedConditions.presenceOfElementLocated(findObject(objectLocatorType, locatorValue)));
+			  WebElement element = driver.findElement(findObject(objectLocatorType, locatorValue));
+			  objectExists = true;
 		}catch(StaleElementReferenceException ser){                   
 			objectExists = false;
 		}catch(NoSuchElementException nse){                         
@@ -566,6 +610,14 @@ public class Util extends CSV_Reader{
 		    	this.msgbox("Cannot find: " + objectName + "\n Timeout limit reached.");
 		}
 		return objectExists;
+	}
+	public void waitForSelectBoxOption() throws IOException, InterruptedException{
+		int sleepTime = 2000;
+		boolean objectExists = false;
+		while(sleepTime<this.globalWaitTime){
+			Thread.sleep(sleepTime);
+			sleepTime = sleepTime*2;
+		}
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
@@ -643,22 +695,11 @@ public class Util extends CSV_Reader{
 			//driver.quit();
 		}
 	}
-	public void selectListBoxItem(String objectLocatorType, String locatorValue, String optionToSelect) throws IOException, InterruptedException{
-		Thread.sleep(3000);
+	public void selectListBoxItem(String objectLocatorType, final String locatorValue, String optionToSelect) throws IOException, InterruptedException{
 		if(waitForObject("Select box", objectLocatorType, locatorValue) == true){
-			Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
-			selectBox.selectByVisibleText(optionToSelect);
-			String selectedOption = selectBox.getFirstSelectedOption().getAttribute("selected");
-			//System.out.println("selected option: " + selectedOption);
-			if(!selectedOption.equals("true")){
-				try {
-					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, optionToSelect + " does not match option selected"));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}else{
-			//driver.quit();
+			Thread.sleep(3000);
+			WebElement selectBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+			selectBox.sendKeys(optionToSelect);
 		}
 	}
 	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
@@ -758,6 +799,11 @@ public class Util extends CSV_Reader{
 	public CharSequence getMainWindowHandle(){
 		String mainWindowHandle=driver.getWindowHandle();
 		return mainWindowHandle;
+	}
+	public String getBrowserName(){
+		String browserName = null;
+		Capabilities capability = ((RemoteWebDriver) driver).getCapabilities();
+		 return browserName = capability.getBrowserName();
 	}
 	public void saveFile() throws IOException{
 		String[] dialog;
@@ -892,8 +938,13 @@ public class Util extends CSV_Reader{
 		driver.navigate().to(environment);
 		return environment;
 	}
-	public  void closeBrowser() throws Exception{
-		driver.quit();
+	public  void closeBrowser(String closeBrowser) throws Exception{
+		if(closeBrowser.toLowerCase().equals("yes")){
+			driver.quit();
+			this.killBrowserProcess(this.getBrowserName());
+		}else{
+			this.killBrowserProcess(this.getBrowserName());
+		}
 	}
 	public void killBrowserProcess(String browserName) throws Exception{
 	  final String KILL = "taskkill /IM";

@@ -33,6 +33,8 @@ public class RunTests{
     public String testDataFileName = null;
     public String testDataFileObjectName = null;
     public String testStepObjectName = null;
+    public String[] componentAndTestCase = null;
+    public String componentName = null;
     public String currentTest = null;
     public String testStepPageName = null;
     public String testStep = null;
@@ -42,6 +44,7 @@ public class RunTests{
     public String environment = null;
     public String browserType = null;
     public String browserPath = null;
+    public String closeBrowser = null;
     public String automatedTestsFolderPath = null;
     public int globalWaitTime = 0;
     
@@ -87,6 +90,7 @@ public class RunTests{
 		browserType = util.getTestConfigProperty("browserType");
 		automatedTestsFolderPath = util.getTestConfigProperty("Path to Automated Tests");
 		globalWaitTime = Integer.parseInt(util.getTestConfigProperty("Wait time(seconds)"));
+		closeBrowser = util.getTestConfigProperty("Close Browser at end of test");
 		//******* Set log file location ****************//
 		System.setProperty("TestEngineLog", automatedTestsFolderPath + "\\TestEngineLog\\TestEngineLog.log");
 		//System.out.println(System.getProperty("TestEngineLog"));
@@ -115,14 +119,17 @@ public class RunTests{
         util.setTestDirectoryPath(automatedTestsFolderPath);
         util.setGlobalWaitTime(globalWaitTime);
 		for(int i=0; i<=testsToRun.size()-1; i++){
-			currentTest = testsToRun.get(i);
+			//componentAndTestCase =testsToRun.get(i).split("/");
+			componentName = util.getComponentName(testsToRun.get(i));
+			currentTest = util.getTestCaseName(testsToRun.get(i));
+			testDataFileName = util.getTestDataFilePath(testsToRun.get(i));
 			//System.out.println(currentTest);
 			/*******If test case exists in Test_Cases folder, read the file and get the page name and action for each object in the test steps*******/
 			if(util.verifyTestCaseExists(currentTest) == true){
 				util.setCurrentTestName(currentTest);
 				util.setTotalTestNumber();
 				String currentTestPath = util.getTestCasePath(currentTest);
-				System.out.println("currentTestPath: " + currentTestPath);
+				//System.out.println("currentTestPath: " + currentTestPath);
 	        	LOGS.info("-------------------->> STARTING TEST CASE: " + currentTest + " <<--------------------");
 				CSVReader testCaseReader = new CSVReader(new FileReader(currentTestPath));
 			    List<String[]> testCaseContent = testCaseReader.readAll();
@@ -217,8 +224,7 @@ public class RunTests{
 		}
 		util.setFailedTestsNumber();
 		util.writeTestResultsFile();
-		util.killBrowserProcess(browserType);
-		util.closeBrowser();
+		util.closeBrowser(closeBrowser);
 	}
 }
 	 
