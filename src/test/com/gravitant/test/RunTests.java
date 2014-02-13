@@ -30,12 +30,12 @@ public class RunTests{
     public String objectMapFilePath;
     public String objectMapFileName = null;
     public String testDataFilePath;
-    public String testDataFiles = null;
+    public String testDataFileName = null;
     public String testDataFileObjectName = null;
     public String testStepObjectName = null;
     public String[] componentAndTestCase = null;
     public String componentName = null;
-    public String currentTest = null;
+    public String currentTestName = null;
     public String testStepPageName = null;
     public String testStep = null;
     public int testStepNumber = 0;
@@ -114,22 +114,23 @@ public class RunTests{
 		util.launchBrowser(browserType);
 		util.navigateToUrl(environment);
 		//*******Get test cases to run from TestsToRun.txt *************//
-        testsToRun = util.getTestsToRun();
-        //System.out.println(testsToRun);
         util.setTestDirectoryPath(automatedTestsFolderPath);
         util.setGlobalWaitTime(globalWaitTime);
+        testsToRun = util.getTestsToRun();
+        //System.out.println(testsToRun);
 		for(int i=0; i<=testsToRun.size()-1; i++){
+			if(util.getErrorFlag()==true){break;}
 			componentName = util.getComponentName(testsToRun.get(i));
-			currentTest = util.getTestCaseName(testsToRun.get(i));
-			testDataFiles = util.getTestDataFiles(testsToRun.get(i));
+			currentTestName = util.getTestCaseName(testsToRun.get(i));
+			testDataFileName = util.getTestDataFileName(testsToRun.get(i));
 			//System.out.println(currentTest);
 			/*******If test case exists in Test_Cases folder, read the file and get the page name and action for each object in the test steps*******/
-			if(util.verifyTestCaseExists(currentTest) == true){
-				util.setCurrentTestName(currentTest);
+			if(util.verifyFileExists(componentName, currentTestName) && util.verifyFileExists(componentName, testDataFileName)){
+				util.setCurrentTestName(currentTestName);
 				util.setTotalTestNumber();
-				String currentTestPath = util.getTestCasePath(currentTest);
+				String currentTestPath = util.getTestCasePath(currentTestName);
 				//System.out.println("currentTestPath: " + currentTestPath);
-	        	LOGS.info("-------------------->> STARTING TEST CASE: " + currentTest + " <<--------------------");
+	        	LOGS.info("-------------------->> STARTING TEST CASE: " + currentTestName + " <<--------------------");
 				CSVReader testCaseReader = new CSVReader(new FileReader(currentTestPath));
 			    List<String[]> testCaseContent = testCaseReader.readAll();
 			    /*******Find if this is a data test *******/
@@ -143,6 +144,7 @@ public class RunTests{
 			    if(dataTestStartRow!=0){
 			    	for (int j=1; j<=dataTestStartRow; j++){
 				    	testStepRow = testCaseContent.get(j);
+				    	util.setErrorFlag(false);
 				    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 				    		testStepNumber = Integer.parseInt(testStepRow[0]);
 						    testStepPageName = testStepRow[2];
@@ -156,6 +158,7 @@ public class RunTests{
 						    }else{
 						    	testData = util.getTestData(testStepPageName, testStepObjectName);
 							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+							    if(util.errorFlag==true){break;}
 						    }
 				    	}
 			    	}
@@ -167,7 +170,8 @@ public class RunTests{
 			    		}else{
 			    			LOGS.info("*********** Beginning data test iteration: " + currentDatatestIteration + "************");
 			    			for(int m=dataTestStartRow +1; m<dataTestEndRow; m++){
-							    	testStepRow = testCaseContent.get(m);
+			    				util.setErrorFlag(false);
+							    testStepRow = testCaseContent.get(m);
 							    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 							    		testStepNumber = Integer.parseInt(testStepRow[0]);
 									    testStepPageName = testStepRow[2];
@@ -177,6 +181,7 @@ public class RunTests{
 							        	util.setCurrentTestStep(testStep);
 									    testData = util.getTestData(testStepPageName, testStepObjectName, currentDatatestIteration);
 									    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+									    if(util.errorFlag==true){break;}
 							    	}
 			    			}
 			    		}
@@ -184,6 +189,7 @@ public class RunTests{
 			    	}
 			    	/************************************************************/
 			    	for (int j=dataTestEndRow+1; j<testCaseContent.size(); j++){
+			    		util.setErrorFlag(false);
 				    	testStepRow = testCaseContent.get(j);
 				    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 				    		 testStepNumber = Integer.parseInt(testStepRow[0]);
@@ -194,13 +200,15 @@ public class RunTests{
 					        	util.setCurrentTestStep(testStep);
 							    testData = util.getTestData(testStepPageName, testStepObjectName);
 							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+							    if(util.errorFlag==true){break;}
 				    	}
 					}
 			    testCaseReader.close();
 			    LOGS.info("*********** End data test ************");
 			    }else{
 			    	/*******If this is NOT a data test, execute test steps in the test case sequentially*******/
-			    	for(int j=1; j<testCaseContent.size(); j++){
+   			    	for(int j=1; j<testCaseContent.size(); j++){
+			    		util.setErrorFlag(false);
 				    	testStepRow = testCaseContent.get(j);
 				    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 				    		testStepNumber = Integer.parseInt(testStepRow[0]);
@@ -212,18 +220,18 @@ public class RunTests{
 				        	util.setCurrentTestStepNumber(testStepNumber);
 						    testData = util.getTestData(testStepPageName, testStepObjectName);
 						    util.executeAction(testStepPageName, testStepObjectName, action, testData);
+						    if(util.errorFlag==true){break;}
 				    	}
 					}
 			    }
 			}else{
 				/*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******/
-				LOGS.info("**** Test case: " + "\"" + currentTest + "\"" +  " does not exist in Test_Cases folder ****");
+				//LOGS.info("**** Test case: " + "\"" + currentTestName + "\"" +  " does not exist in Test_Cases folder ****");
 				continue;
 			}
 		}
 		util.setFailedTestsNumber();
 		util.writeTestResultsFile();
-		util.closeBrowser(closeBrowser);
 	}
 }
 	 
