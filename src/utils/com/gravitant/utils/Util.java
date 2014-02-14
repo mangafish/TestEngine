@@ -118,11 +118,12 @@ public class Util extends CSV_Reader{
 	public String getTestEnginePath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
-		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
-        //String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.5"));
-		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_3.0"));
-        this.setTestEnginePath(testConfigDirectory);
-        return testConfigDirectory;
+		//String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
+        //String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.7"));
+		//String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_3.0"));
+		//this.setTestEnginePath(testConfigDirectory);
+        this.setTestEnginePath(jarFilePath);
+        return jarFilePath;
 	}
 	public void setTestEnginePath(String path){
 		testEnginePath  = path;
@@ -552,7 +553,7 @@ public class Util extends CSV_Reader{
 				break;
 			case "scrolldown":
 				LOGS.info("> Scrolling down");
-				scrollDown(locator_Type, locator_Value);
+				scrollDown();
 				break;
 			case "savescreenshot":
 				LOGS.info("> Capturing screenshot: " + pageName);
@@ -705,10 +706,23 @@ public class Util extends CSV_Reader{
 		}
 	}
 	public void selectListBoxItem(String objectLocatorType, final String locatorValue, String optionToSelect) throws IOException, InterruptedException{
-		if(waitForObject("Select box", objectLocatorType, locatorValue) == true){
+		if(waitForObject("Select box", objectLocatorType, locatorValue)== true){
 			Thread.sleep(4000);
-			WebElement selectBox = driver.findElement(findObject(objectLocatorType, locatorValue));
-			selectBox.sendKeys(optionToSelect);
+			try{
+				WebElement selectBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+				selectBox.sendKeys(optionToSelect);
+			}catch(Exception e1){
+				try{
+					Select selectBox = new Select(driver.findElement(findObject(objectLocatorType, locatorValue)));
+					selectBox.selectByVisibleText(optionToSelect);
+				}catch (Exception e2) {
+					e2.printStackTrace();
+					LOGS.info("Select box item: " + "\"" + optionToSelect + "\"" + " is not displayed");
+					LOGS.error(e2.getMessage());
+					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Select box item: " +  optionToSelect + " is not displayed"));
+					this.captureScreen(this.currentTestName, this.currentTestStepNumber);
+				}
+			}
 		}
 	}
 	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
@@ -785,7 +799,7 @@ public class Util extends CSV_Reader{
 		}
 	}
 
-	public   void scrollDown(String objectLocatorType, String locatorValue){
+	public   void scrollDown(){
 		JavascriptExecutor jse = (JavascriptExecutor)driver;
 		jse.executeScript("window.scrollBy(0,500)", "");
 	}

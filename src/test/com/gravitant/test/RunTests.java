@@ -92,14 +92,14 @@ public class RunTests{
 		globalWaitTime = Integer.parseInt(util.getTestConfigProperty("Wait time(seconds)"));
 		closeBrowser = util.getTestConfigProperty("Close Browser at end of test");
 		//******* Set log file location ****************//
-		System.setProperty("TestEngineLog", automatedTestsFolderPath + "\\TestEngineLog\\TestEngineLog.log");
+		System.setProperty("TestEngineLog", testEnginePath + "\\TestEngineLog\\TestEngineLog.log");
 		//System.out.println(System.getProperty("TestEngineLog"));
 		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "warn");
 		Logger LOGS = Logger.getLogger(RunTests.class.getName());
 		util.setLogger();
 		/*******Create test results folder ****************/
-  		testResultsFolderName = util.createFolder(automatedTestsFolderPath, "Test_Results").toString();//create test results folder
+  		testResultsFolderName = util.createFolder(testEnginePath, "Test_Results").toString();//create test results folder
 		currentResultsFolderName = util.createFolder(testResultsFolderName, "Results_" + currentDate).toString();//create folder with todays date within above folder
 		currentResultFilePath =util.createResultsFile(currentResultsFolderName, currentTime);//create test results file
 		util.setCurrentResultFilePath(currentResultFilePath);
@@ -224,14 +224,15 @@ public class RunTests{
 				    	}
 					}
 			    }
-			}else{
-				/*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******/
+			}/*else{
+				*//*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******//*
 				//LOGS.info("**** Test case: " + "\"" + currentTestName + "\"" +  " does not exist in Test_Cases folder ****");
 				continue;
-			}
+			}*/
 		}
 		util.setFailedTestsNumber();
 		util.writeTestResultsFile();
+		util.closeBrowser(closeBrowser);
 	}
 }
 	 
