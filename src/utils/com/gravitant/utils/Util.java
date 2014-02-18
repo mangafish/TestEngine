@@ -118,12 +118,13 @@ public class Util extends CSV_Reader{
 	public String getTestEnginePath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
-		//String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
+		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
         //String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.7"));
-		//String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_3.0"));
-		//this.setTestEnginePath(testConfigDirectory);
-        this.setTestEnginePath(jarFilePath);
-        return jarFilePath;
+		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_4.0"));
+		this.setTestEnginePath(testConfigDirectory);
+		return jarFilePath;
+       /* this.setTestEnginePath(jarFilePath);
+        return jarFilePath;*/
 	}
 	public void setTestEnginePath(String path){
 		testEnginePath  = path;
@@ -614,6 +615,7 @@ public class Util extends CSV_Reader{
 		}catch(NoSuchElementException nse){                         
 			objectExists = false;
 		}catch(Exception e){
+			e.printStackTrace();
 			this.setErrorFlag(true);
 	    	LOGS.info(objectName  + " is not displayed or has changed position");
 			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, objectName + " is not displayed or has changed position."));
@@ -637,9 +639,16 @@ public class Util extends CSV_Reader{
 	public boolean getErrorFlag(){
  		return this.errorFlag;
 	}
+	public void clickButton(String objectLocatorType, String locatorValue) throws IOException{
+		if(waitForObject("Button", objectLocatorType, locatorValue) == true){
+			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
+			button.click();
+		}
+	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
+		//String review = WebElement.findElement(By.xpath("./td/div"));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		System.out.println("Total Rows: " + rows.size()); //print number of rows
 		for (int rowNum=1; rowNum<rows.size(); rowNum++) {
@@ -652,21 +661,16 @@ public class Util extends CSV_Reader{
 		}
 		return cellData;
 	}
-	public void clickButton(String objectLocatorType, String locatorValue) throws IOException{
-		if(waitForObject("Button", objectLocatorType, locatorValue) == true){
-			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
-			button.click();
-		}
-	}
 	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem){
-		int trLocation  =  locatorValue.lastIndexOf("tr");
+		this.getCellData(objectLocatorType, locatorValue);
+		/*int trLocation  =  locatorValue.lastIndexOf("tr");
 		if(locatorValue.substring(trLocation+1).equals("[")){
 			String replaceRowNum = locatorValue.replace(locatorValue.substring(trLocation+3), String.valueOf(listItemRow));
 			locatorValue = replaceRowNum + locatorValue.substring(trLocation + 4, locatorValue.length()); 
 		}
 		System.out.println(locatorValue);
 		WebElement menuItem = driver.findElement(findObject(objectLocatorType, locatorValue));
-		((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);
+		((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);*/
 	}
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
@@ -725,17 +729,44 @@ public class Util extends CSV_Reader{
 			}
 		}
 	}
-	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException{
+	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException, InterruptedException{
+		Thread.sleep(2000);
 		WebElement radioButton = null;
 		switch(objectLocatorType){
 			case "id":
 				waitForObject("Radio button", objectLocatorType, locatorValue.trim());
 				radioButton = driver.findElement(By.id(locatorValue.trim()));
 			case "xpath":
-				if(waitForObject("Radio button", objectLocatorType, "//input[@value=" + "'" + testData + "']") == true){
-					radioButton = driver.findElement(By.xpath("//input[@value=" + "'" + testData + "']"));
+				try{
+					radioButton = driver.findElement(By.xpath( ".//tr/td/label[text()='" + testData + "']"));
 					radioButton.click();
+					/*if(waitForObject("Radio button", objectLocatorType, ".//tr/td/label[text()='" + testData + "']")==true){
+						radioButton = driver.findElement(By.xpath( ".//tr/td/label[text()='" + testData + "']"));
+						radioButton.click();
+					}*/
+				}catch(Exception e){
+					String xpath = ".//tr/td/label[contains(text()," + "'" + testData + "')]";
+					radioButton = driver.findElement(By.xpath(xpath));
+					radioButton.click();
+					/*if(waitForObject("Radio button", objectLocatorType, ".//label[contains(text()," + "'" + testData + "')]") == true){
+						radioButton = driver.findElement(By.xpath(".//label[contains(text()," + "'" + testData + "')]"));
+						radioButton.click();
+					}*/
 				}
+			/*case "css":
+				try{
+					//driver.findElement(findObject(objectLocatorType, locatorValue)).click();
+					if(waitForObject("Radio button", objectLocatorType, "label[text='" + testData + "']")==true){
+					//if(waitForObject("Radio button", objectLocatorType, "//label[contains('" + testData + "')]")==true){
+						radioButton = driver.findElement(By.xpath( "//label[contains(text(),'" + testData + "')]"));
+						radioButton.click();
+					}
+				}catch(Exception e){              
+					if(waitForObject("Radio button", objectLocatorType, "//input[@value=" + "'" + testData + "']") == true){
+						radioButton = driver.findElement(By.xpath("//input[@value=" + "'" + testData + "']"));
+						radioButton.click();
+					}
+				}*/
 		}
 	}
 	public void checkCheckBox(String objectLocatorType, String locatorValue) throws IOException{
