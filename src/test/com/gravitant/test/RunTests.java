@@ -123,7 +123,7 @@ public class RunTests{
 			componentName = util.getComponentName(testsToRun.get(i));
 			currentTestName = util.getTestCaseName(testsToRun.get(i));
 			testDataFileName = util.getTestDataFileName(testsToRun.get(i));
-			//System.out.println(currentTest);
+			System.out.println(testDataFileName);
 			/*******If test case exists in Test_Cases folder, read the file and get the page name and action for each object in the test steps*******/
 			if(util.verifyFileExists(componentName, currentTestName) && util.verifyFileExists(componentName, testDataFileName)){
 				util.setCurrentTestName(currentTestName);
