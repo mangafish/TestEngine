@@ -516,6 +516,10 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
 				clickButton(locator_Type, locator_Value);
 				break;
+			case "clickbuttonwithtext":
+				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
+				clickButtonWithText(locator_Type, locator_Value, testData);
+				break;
 			case "typeinput":
 				LOGS.info("> Entering text in: " + objectName + " on " + pageName);
 				enterText(locator_Type, locator_Value, testData);
@@ -608,7 +612,6 @@ public class Util extends CSV_Reader{
 		boolean objectExists = false;
 		try{
 			  wait.until(ExpectedConditions.presenceOfElementLocated(findObject(objectLocatorType, locatorValue)));
-			  WebElement element = driver.findElement(findObject(objectLocatorType, locatorValue));
 			  objectExists = true;
 		}catch(StaleElementReferenceException ser){                   
 			objectExists = false;
@@ -640,10 +643,36 @@ public class Util extends CSV_Reader{
  		return this.errorFlag;
 	}
 	public void clickButton(String objectLocatorType, String locatorValue) throws IOException{
-		if(waitForObject("Button", objectLocatorType, locatorValue) == true){
+			if(waitForObject("Button", objectLocatorType, locatorValue) == true){
 			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
-			button.click();
+			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", button);
+			//button.click();
 		}
+	}
+	public void clickButtonWithText(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
+		this.getButtonXpath(objectLocatorType, locatorValue, buttonText);
+	}
+	public String getButtonXpath(String objectLocatorType, String locatorValue, String buttonText){
+		String buttonXpath = null;
+		String buttonTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("a[" + "(\\d+)" + "]/"));
+		System.out.println(buttonTableXpath);
+		WebElement table = driver.findElement(findObject(objectLocatorType, buttonTableXpath));
+		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
+		//System.out.println("No. of rows: " + rows.size());
+		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
+			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
+			//System.out.println("Total Columns: " + columns.size()); //print number of columns
+			 for (int colNum=0; colNum<=columns.size(); colNum++){
+				//System.out.println("Column #: " + colNum + " - " + columns.get(colNum).getText().trim().toLowerCase()); //print cell data
+				if(columns.get(colNum).getText().trim().toLowerCase().contains(buttonText.trim().toLowerCase())){
+					int correctedColNum =colNum +1;
+					buttonXpath = buttonTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
+					break;
+				}
+			}
+			//System.out.println(radioButtonXpath);
+		}
+		return buttonXpath;
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
@@ -705,8 +734,12 @@ public class Util extends CSV_Reader{
 	public void enterText(String objectLocatorType, String locatorValue, String text) throws IOException, InterruptedException{
 		if(waitForObject("Text box", objectLocatorType, locatorValue) == true){
 			WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
-			textBox.clear();
-			textBox.sendKeys(text);
+			try{
+				textBox.clear();
+				textBox.sendKeys(text);
+			}catch(Exception e1){
+				textBox.sendKeys(text);
+			}
 		}
 	}
 	public void selectListBoxItem(String objectLocatorType, final String locatorValue, String optionToSelect) throws IOException, InterruptedException{
@@ -732,7 +765,6 @@ public class Util extends CSV_Reader{
 	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException, InterruptedException{
 		Thread.sleep(2000);
 		WebElement radioButton = null;
-		String radioButtonXpath = this.getRadioButtonXpath(objectLocatorType, locatorValue, testData);
 		switch(objectLocatorType){
 			case "id":
 				waitForObject("Radio button", objectLocatorType, locatorValue.trim());
@@ -740,62 +772,49 @@ public class Util extends CSV_Reader{
 				break;
 			case "xpath":
 				try{
-					//this.getCellData(objectLocatorType, locatorValue);
-					//String radioElementXpath = ".//fieldset/table/tbody/tr/td[2]/input[@type='radio']";
-					//String label = ".//fieldset/table/tbody/tr/td/[2]/label[text()='" + testData + "']";
-					//String label = ".//fieldset/table/tbody/tr/td/[2]/label[contains(text(),'" + testData + "')]";
+					String radioButtonXpath = this.getRadioButtonXpath(objectLocatorType, locatorValue, testData);
 					if(waitForObject("Radio button", objectLocatorType, radioButtonXpath)==true){
-					//if(waitForObject("Radio button", objectLocatorType, ".//tr/td/label[text()='" + testData + "']")==true){
 						radioButton = driver.findElement(By.xpath(radioButtonXpath));
 						radioButton.click();
 					}
 				}catch(Exception e){
-					String xpath = ".//tr/td/label[contains(@type" + "'" + testData + "')]";
-					radioButton = driver.findElement(By.xpath(xpath));
-					radioButton.click();
-					/*if(waitForObject("Radio button", objectLocatorType, ".//label[contains(text()," + "'" + testData + "')]") == true){
-						radioButton = driver.findElement(By.xpath(".//label[contains(text()," + "'" + testData + "')]"));
+					String xpath = ".//tr/td/label[contains(text(),'" + testData + "')]";
+					//System.out.println(xpath);
+					if(waitForObject("Radio button", objectLocatorType, xpath) == true){
+						radioButton = driver.findElement(By.xpath(xpath));
 						radioButton.click();
-					}*/
+					}
 				}
 				break;
 			case "css":
-				//String locatorwithTestData =locatorValue.substring(13, locatorValue.length());
 				String locatorwithTestData = locatorValue.replace(locatorValue.substring(13, locatorValue.length()), testData) + "']";
 				try{
 					driver.findElement(findObject(objectLocatorType, locatorwithTestData)).click();
-					/*if(waitForObject("Radio button", objectLocatorType, "label[text='" + testData + "']")==true){
-					//if(waitForObject("Radio button", objectLocatorType, "//label[contains('" + testData + "')]")==true){
-						radioButton = driver.findElement(By.xpath( "//label[contains(text(),'" + testData + "')]"));
-						radioButton.click();
-					}*/
 				}catch(Exception e){      
 					e.printStackTrace();
-					/*if(waitForObject("Radio button", objectLocatorType, "//input[@value=" + "'" + testData + "']") == true){
-						radioButton = driver.findElement(By.xpath("//input[@value=" + "'" + testData + "']"));
-						radioButton.click();
-					}*/
 				}
 				break;
 		}
 	}
 	public String getRadioButtonXpath(String objectLocatorType, String locatorValue, String radioButtonValue){
 		String radioButtonXpath = null;
-		String radioTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("tbody")).substring(0,locatorValue.substring(0, locatorValue.lastIndexOf("tbody")).length()-1);
+		String radioTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
+		//System.out.println(radioTableXpath);
 		WebElement table = driver.findElement(findObject(objectLocatorType, radioTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
+		//System.out.println("No. of rows: " + rows.size());
 		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
 			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-			System.out.println("Total Columns: " + columns.size()); //print number of columns
-			 for (int colNum=0; colNum<columns.size(); colNum++){
-				System.out.print(columns.get(colNum).getText()); //print cell data
-				if(columns.get(colNum).getText().trim().equals(radioButtonValue.trim())){
+			//System.out.println("Total Columns: " + columns.size()); //print number of columns
+			 for (int colNum=0; colNum<=columns.size(); colNum++){
+				//System.out.println("Column #: " + colNum + " - " + columns.get(colNum).getText().trim().toLowerCase()); //print cell data
+				if(columns.get(colNum).getText().trim().toLowerCase().contains(radioButtonValue.trim().toLowerCase())){
 					int correctedColNum =colNum +1;
 					radioButtonXpath = radioTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
 					break;
 				}
 			}
-			System.out.println(radioButtonXpath);
+			//System.out.println(radioButtonXpath);
 		}
 		return radioButtonXpath;
 	}
@@ -1238,3 +1257,4 @@ public class Util extends CSV_Reader{
 	}*/
 	
 }
+
