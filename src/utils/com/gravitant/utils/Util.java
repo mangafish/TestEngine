@@ -650,34 +650,18 @@ public class Util extends CSV_Reader{
 		}
 	}
 	public void clickButtonWithText(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
-		this.getButtonXpath(objectLocatorType, locatorValue, buttonText);
-	}
-	public String getButtonXpath(String objectLocatorType, String locatorValue, String buttonText){
-		String buttonXpath = null;
-		String buttonTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("a[" + "(\\d+)" + "]/"));
-		System.out.println(buttonTableXpath);
-		WebElement table = driver.findElement(findObject(objectLocatorType, buttonTableXpath));
-		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
-		//System.out.println("No. of rows: " + rows.size());
-		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
-			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-			//System.out.println("Total Columns: " + columns.size()); //print number of columns
-			 for (int colNum=0; colNum<=columns.size(); colNum++){
-				//System.out.println("Column #: " + colNum + " - " + columns.get(colNum).getText().trim().toLowerCase()); //print cell data
-				if(columns.get(colNum).getText().trim().toLowerCase().contains(buttonText.trim().toLowerCase())){
-					int correctedColNum =colNum +1;
-					buttonXpath = buttonTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
-					break;
-				}
-			}
-			//System.out.println(radioButtonXpath);
-		}
-		return buttonXpath;
+		List<WebElement> labels = driver.findElements(By.tagName("label")); 
+		for(WebElement label:labels){
+			//System.out.println(label.getText());
+			if(label.getText().equals(buttonText)){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
+				//label.click();
+		  } 
+		} 
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
-		//String review = WebElement.findElement(By.xpath("./td/div"));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		System.out.println("Total Rows: " + rows.size()); //print number of rows
 		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
@@ -691,7 +675,36 @@ public class Util extends CSV_Reader{
 		return cellData;
 	}
 	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem){
-		this.getCellData(objectLocatorType, locatorValue);
+		String menuItemXpath = null;
+		String webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
+		//System.out.println(webTableXpath);
+		WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
+		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
+		//System.out.println("Total Rows: " + rows.size()); //print number of rows
+		for (int rowNum=0; rowNum<rows.size(); rowNum++){
+			System.out.println(menuItemXpath);
+			if(menuItemXpath==null){
+				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
+				System.out.println("Total Columns: " + columns.size()); //print number of columns
+				 for (int colNum=0; colNum<columns.size(); colNum++){
+					//System.out.println(columns.get(colNum).getText());
+					if(columns.get(colNum).getText().trim().contains(listItem.trim())){
+						//System.out.println(columns.get(colNum).getText());
+						menuItemXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]//span";
+						List<WebElement> menuItems = driver.findElements(findObject(objectLocatorType, menuItemXpath));
+						for(WebElement menuItem:menuItems){
+							System.out.println(menuItem.getText());
+							if(menuItem.getText().equals("Edit")){ 
+							     System.out.println(menuItem.getText());
+							     break;
+							} 
+						} 
+						break;
+					}
+				}
+			}else{break;}
+		} 
+		System.out.println("End of table");
 		/*int trLocation  =  locatorValue.lastIndexOf("tr");
 		if(locatorValue.substring(trLocation+1).equals("[")){
 			String replaceRowNum = locatorValue.replace(locatorValue.substring(trLocation+3), String.valueOf(listItemRow));
