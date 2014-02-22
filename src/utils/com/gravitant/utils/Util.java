@@ -675,31 +675,40 @@ public class Util extends CSV_Reader{
 		return cellData;
 	}
 	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem){
+		String menuItemBaseXpath = null;
 		String menuItemXpath = null;
+		List<WebElement> menuItems = null;
+		WebElement menuItem = null;
 		String webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
 		//System.out.println(webTableXpath);
 		WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		//System.out.println("Total Rows: " + rows.size()); //print number of rows
 		for (int rowNum=0; rowNum<rows.size(); rowNum++){
-			System.out.println(menuItemXpath);
-			if(menuItemXpath==null){
+			//System.out.println(menuItemXpath);
+			if(menuItemBaseXpath==null){
 				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-				System.out.println("Total Columns: " + columns.size()); //print number of columns
+				//System.out.println("Total Columns: " + columns.size()); //print number of columns
 				 for (int colNum=0; colNum<columns.size(); colNum++){
 					//System.out.println(columns.get(colNum).getText());
 					if(columns.get(colNum).getText().trim().contains(listItem.trim())){
-						//System.out.println(columns.get(colNum).getText());
-						menuItemXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]//span";
-						List<WebElement> menuItems = driver.findElements(findObject(objectLocatorType, menuItemXpath));
-						for(WebElement menuItem:menuItems){
-							System.out.println(menuItem.getText());
-							if(menuItem.getText().equals("Edit")){ 
-							     System.out.println(menuItem.getText());
-							     break;
-							} 
-						} 
-						break;
+						//System.out.println("Column No: " + colNum + " - " + columns.get(colNum).getText());
+						menuItemBaseXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/";
+						menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath + "div"));
+						if(menuItems.size()<=1){
+							menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath + "/div"));
+							menuItemXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/div/div";
+							for(int i=0;i<=menuItems.size();i++){
+								System.out.println(menuItems.get(i).getText());
+							}
+							/*for(WebElement menuItem:menuItems){
+							//System.out.println(menuItem.getText());
+								if(menuItem.getText().equals("Edit")){ 
+									System.out.println(menuItem.getText());
+									break;
+								} 
+							} */
+						}else{break;}
 					}
 				}
 			}else{break;}
