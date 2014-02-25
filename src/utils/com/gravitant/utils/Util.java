@@ -466,6 +466,10 @@ public class Util extends CSV_Reader{
 	        	testDataFileObjectName = testDataRow[0];
 	        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
 	       			testData = testDataRow[1];
+	       			if(testData!=null && testData.substring(0,1).equals("\"")){
+	       				testData = testData.replaceAll("\""," ").trim();
+		        		//System.out.println(testData);
+		        	}
 	    			break;
 	        	}
 	        }
@@ -680,7 +684,7 @@ public class Util extends CSV_Reader{
 		List<WebElement> menuItems = null;
 		WebElement menuItem = null;
 		String webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
-		//System.out.println(webTableXpath);
+		System.out.println(webTableXpath);
 		WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		//System.out.println("Total Rows: " + rows.size()); //print number of rows
@@ -689,39 +693,36 @@ public class Util extends CSV_Reader{
 			if(menuItemBaseXpath==null){
 				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 				//System.out.println("Total Columns: " + columns.size()); //print number of columns
-				 for (int colNum=0; colNum<columns.size(); colNum++){
-					//System.out.println(columns.get(colNum).getText());
+				for (int colNum=0; colNum<columns.size(); colNum++){
+					String cellText = columns.get(colNum).getText().trim();
+					System.out.println(cellText);
+					menuItemBaseXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]";
 					if(columns.get(colNum).getText().trim().contains(listItem.trim())){
-						//System.out.println("Column No: " + colNum + " - " + columns.get(colNum).getText());
-						menuItemBaseXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/";
-						menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath + "div"));
-						if(menuItems.size()<=1){
-							menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath + "/div"));
-							menuItemXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/div/div";
-							for(int i=0;i<=menuItems.size();i++){
-								System.out.println(menuItems.get(i).getText());
+						boolean found = false;
+						while(found==false){
+							int numberOfMenuItems =0;
+							menuItemBaseXpath = menuItemBaseXpath + "/child::*";
+							menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath));
+							numberOfMenuItems = menuItems.size();
+							if(numberOfMenuItems>1){
+								for(int i=0;i<numberOfMenuItems;i++){
+									System.out.println("Tag name: " + menuItems.get(i).getTagName());
+									String menuItemText = menuItems.get(i).getText();
+									System.out.println(menuItemText);
+									/*if(menuItemText.trim().equals("Edit")){
+										((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItems.get(i));
+										found = true;
+										break;
+									}*/
+								}
 							}
-							/*for(WebElement menuItem:menuItems){
-							//System.out.println(menuItem.getText());
-								if(menuItem.getText().equals("Edit")){ 
-									System.out.println(menuItem.getText());
-									break;
-								} 
-							} */
-						}else{break;}
+							
+						}
 					}
 				}
-			}else{break;}
-		} 
-		System.out.println("End of table");
-		/*int trLocation  =  locatorValue.lastIndexOf("tr");
-		if(locatorValue.substring(trLocation+1).equals("[")){
-			String replaceRowNum = locatorValue.replace(locatorValue.substring(trLocation+3), String.valueOf(listItemRow));
-			locatorValue = replaceRowNum + locatorValue.substring(trLocation + 4, locatorValue.length()); 
+			}
 		}
-		System.out.println(locatorValue);
-		WebElement menuItem = driver.findElement(findObject(objectLocatorType, locatorValue));
-		((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItem);*/
+		System.out.println("End of table");
 	}
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
