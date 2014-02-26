@@ -578,7 +578,7 @@ public class Util extends CSV_Reader{
 				break;
 			case "clicklistmenuitem":
 				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
-				clickListMenuItem(locator_Type, locator_Value, testData);
+				clickActionsMenuItem(locator_Type, locator_Value, testData);
 				break;
 			case "verifypagetitle":
 				LOGS.info("> Verifying page title on: " + pageName);
@@ -678,51 +678,56 @@ public class Util extends CSV_Reader{
 		}
 		return cellData;
 	}
-	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem){
-		String menuItemBaseXpath = null;
+	public void clickActionsMenuItem(String objectLocatorType, String locatorValue, String listItem) throws InterruptedException{
+		String webTableXpath = null;
+		String menuXpath = null;
 		String menuItemXpath = null;
 		List<WebElement> menuItems = null;
+		WebElement menu = null;
 		WebElement menuItem = null;
-		String webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
-		System.out.println(webTableXpath);
+		boolean foundListItem = false;
+		boolean foundMenuItem = false;
+		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
+		//System.out.println(webTableXpath);
+		Thread.sleep(3000);
 		WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		//System.out.println("Total Rows: " + rows.size()); //print number of rows
 		for (int rowNum=0; rowNum<rows.size(); rowNum++){
-			//System.out.println(menuItemXpath);
-			if(menuItemBaseXpath==null){
+			//System.out.println(rows.get(rowNum).getText());
+			if(foundListItem==true){break;}else{
 				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 				//System.out.println("Total Columns: " + columns.size()); //print number of columns
-				for (int colNum=0; colNum<columns.size(); colNum++){
+				for(int colNum=0; colNum<columns.size(); colNum++){
 					String cellText = columns.get(colNum).getText().trim();
-					System.out.println(cellText);
-					menuItemBaseXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]";
+					//System.out.println(cellText);
 					if(columns.get(colNum).getText().trim().contains(listItem.trim())){
-						boolean found = false;
-						while(found==false){
-							int numberOfMenuItems =0;
-							menuItemBaseXpath = menuItemBaseXpath + "/child::*";
-							menuItems = driver.findElements(findObject(objectLocatorType, menuItemBaseXpath));
-							numberOfMenuItems = menuItems.size();
-							if(numberOfMenuItems>1){
-								for(int i=0;i<numberOfMenuItems;i++){
-									System.out.println("Tag name: " + menuItems.get(i).getTagName());
-									String menuItemText = menuItems.get(i).getText();
-									System.out.println(menuItemText);
-									/*if(menuItemText.trim().equals("Edit")){
+						if(foundMenuItem==true){break;}else{
+							menuItemXpath = this.addChild(webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]");//add child node to xpath
+							menuItems = driver.findElements(findObject(objectLocatorType, menuXpath));
+							if(menuItems.size()==1 && menuItems.get(0).getText().trim().equals(listItem)){
+								((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItems.get(0));
+							}else{
+								for(int i=0;i<menuItems.size();i++){
+									if(menuItems.get(i).getText().trim().equals(listItem.trim())){
 										((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItems.get(i));
-										found = true;
+										foundMenuItem = true;
 										break;
-									}*/
+									}
 								}
 							}
-							
 						}
+						foundListItem = true;
+						break;
 					}
 				}
 			}
 		}
 		System.out.println("End of table");
+	}
+	public String addChild(String xpath){
+		String modifiedXpath = xpath + "/child::*";
+		return modifiedXpath;
 	}
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
