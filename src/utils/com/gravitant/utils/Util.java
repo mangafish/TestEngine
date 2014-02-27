@@ -682,6 +682,7 @@ public class Util extends CSV_Reader{
 		String webTableXpath = null;
 		String menuXpath = null;
 		String menuItemXpath = null;
+		String[] nodeInfo = null;
 		List<WebElement> menuItems = null;
 		WebElement menu = null;
 		WebElement menuItem = null;
@@ -698,36 +699,57 @@ public class Util extends CSV_Reader{
 			if(foundListItem==true){break;}else{
 				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 				//System.out.println("Total Columns: " + columns.size()); //print number of columns
-				for(int colNum=0; colNum<columns.size(); colNum++){
-					String cellText = columns.get(colNum).getText().trim();
-					//System.out.println(cellText);
-					if(columns.get(colNum).getText().trim().contains(listItem.trim())){
-						if(foundMenuItem==true){break;}else{
-							menuItemXpath = this.addChild(webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]");//add child node to xpath
-							menuItems = driver.findElements(findObject(objectLocatorType, menuXpath));
-							if(menuItems.size()==1 && menuItems.get(0).getText().trim().equals(listItem)){
-								((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItems.get(0));
-							}else{
-								for(int i=0;i<menuItems.size();i++){
-									if(menuItems.get(i).getText().trim().equals(listItem.trim())){
-										((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menuItems.get(i));
-										foundMenuItem = true;
-										break;
-									}
-								}
-							}
+				for(int colNum=1; colNum<columns.size(); colNum++){
+					//String cellText = columns.get(colNum).getText().trim();
+					//System.out.println("Column No.: " + colNum);
+					if(columns.get(colNum).getText().trim().contains(listItem.trim()) && foundMenuItem==true){break;}else{
+						menuXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/child::*";
+						nodeInfo = this.searchChildNodes(menuXpath, "Edit");
+						if(nodeInfo[1].equals("false")){
+							continue;
+						}else{
+							System.out.println("Yaaaaaaaay!!!!");
 						}
-						foundListItem = true;
-						break;
 					}
 				}
 			}
 		}
 		System.out.println("End of table");
 	}
-	public String addChild(String xpath){
-		String modifiedXpath = xpath + "/child::*";
-		return modifiedXpath;
+	public List<String[]> searchChildNodes(String xpath, String textToSearch){
+		List<String[]> nodeInfo = null;
+		String modifiedXpath = null;
+		String elementText = null;
+		int numberOfMenuItems = 0;
+		try{
+			List<WebElement> elements = driver.findElements(findObject("xpath", xpath));
+			numberOfMenuItems = elements.size();
+			System.out.println(numberOfMenuItems);
+			if(numberOfMenuItems<1){
+				WebElement element = driver.findElement(By.xpath(xpath));
+				elementText = element.getText().trim();
+				System.out.println(elementText);
+				if(elementText.equals(textToSearch)){
+					modifiedXpath = xpath;
+				}
+			}else{
+				for(int i=0; i<numberOfMenuItems;i++){
+					elementText = elements.get(i).getText().trim();
+					System.out.println(elementText);
+					if(elementText.equals(textToSearch)){
+						modifiedXpath = xpath + "[" + elements.get(i) + "]";
+					}else{
+						modifiedXpath = xpath + "/child::*";
+						searchChildNodes(modifiedXpath, textToSearch);
+					}
+				}
+			}
+		}catch(Exception e){
+			modifiedXpath = xpath.substring(0, xpath.lastIndexOf("/child::*"));
+			nodeInfo..add(0, modifiedXpath);
+			nodeInfo[1] = "false";
+		}
+		return nodeInfo;
 	}
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
