@@ -578,7 +578,7 @@ public class Util extends CSV_Reader{
 				break;
 			case "clicklistmenuitem":
 				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
-				clickActionsMenuItem(locator_Type, locator_Value, testData);
+				clickListMenuItem(locator_Type, locator_Value, testData);
 				break;
 			case "verifypagetitle":
 				LOGS.info("> Verifying page title on: " + pageName);
@@ -647,7 +647,7 @@ public class Util extends CSV_Reader{
  		return this.errorFlag;
 	}
 	public void clickButton(String objectLocatorType, String locatorValue) throws IOException{
-			if(waitForObject("Button", objectLocatorType, locatorValue) == true){
+		if(waitForObject("Button", objectLocatorType, locatorValue) == true){
 			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
 			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", button);
 			//button.click();
@@ -659,7 +659,6 @@ public class Util extends CSV_Reader{
 			//System.out.println(label.getText());
 			if(label.getText().equals(buttonText)){
 				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
-				//label.click();
 		  } 
 		} 
 	}
@@ -678,78 +677,38 @@ public class Util extends CSV_Reader{
 		}
 		return cellData;
 	}
-	public void clickActionsMenuItem(String objectLocatorType, String locatorValue, String listItem) throws InterruptedException{
+	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem) throws InterruptedException, IOException{
 		String webTableXpath = null;
 		String menuXpath = null;
-		String menuItemXpath = null;
-		String[] nodeInfo = null;
-		List<WebElement> menuItems = null;
-		WebElement menu = null;
-		WebElement menuItem = null;
-		boolean foundListItem = false;
 		boolean foundMenuItem = false;
 		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
-		//System.out.println(webTableXpath);
-		Thread.sleep(3000);
-		WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
-		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
-		//System.out.println("Total Rows: " + rows.size()); //print number of rows
-		for (int rowNum=0; rowNum<rows.size(); rowNum++){
-			//System.out.println(rows.get(rowNum).getText());
-			if(foundListItem==true){break;}else{
-				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-				//System.out.println("Total Columns: " + columns.size()); //print number of columns
-				for(int colNum=1; colNum<columns.size(); colNum++){
-					//String cellText = columns.get(colNum).getText().trim();
-					//System.out.println("Column No.: " + colNum);
-					if(columns.get(colNum).getText().trim().contains(listItem.trim()) && foundMenuItem==true){break;}else{
-						menuXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]/child::*";
-						nodeInfo = this.searchChildNodes(menuXpath, "Edit");
-						if(nodeInfo[1].equals("false")){
-							continue;
-						}else{
-							System.out.println("Yaaaaaaaay!!!!");
+		//System.out.println("Table xpath: " + webTableXpath);
+		if(waitForObject(listItem, objectLocatorType, locatorValue) == true){
+			WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
+			List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
+			//System.out.println("Total Rows: " + rows.size()); //print number of rows
+			for (int rowNum=1; rowNum<rows.size(); rowNum++){
+				//System.out.println(rows.get(rowNum).getText());
+				if(foundMenuItem==true){break;}else{
+					List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
+					//System.out.println("Total Columns: " + columns.size()); //print number of columns
+					for(int colNum=0; colNum<columns.size(); colNum++){
+						String cellText = columns.get(colNum).getText().trim();
+						//System.out.println(cellText);
+						if(cellText.contains(listItem.trim())){
+							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("td[")+5);
+							//System.out.println(xpathSubString);
+							menuXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]" + xpathSubString;
+							//System.out.println(menuXpath );
+							WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
+							((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
+							foundMenuItem = true;
+							break;
 						}
 					}
 				}
 			}
 		}
-		System.out.println("End of table");
-	}
-	public List<String[]> searchChildNodes(String xpath, String textToSearch){
-		List<String[]> nodeInfo = null;
-		String modifiedXpath = null;
-		String elementText = null;
-		int numberOfMenuItems = 0;
-		try{
-			List<WebElement> elements = driver.findElements(findObject("xpath", xpath));
-			numberOfMenuItems = elements.size();
-			System.out.println(numberOfMenuItems);
-			if(numberOfMenuItems<1){
-				WebElement element = driver.findElement(By.xpath(xpath));
-				elementText = element.getText().trim();
-				System.out.println(elementText);
-				if(elementText.equals(textToSearch)){
-					modifiedXpath = xpath;
-				}
-			}else{
-				for(int i=0; i<numberOfMenuItems;i++){
-					elementText = elements.get(i).getText().trim();
-					System.out.println(elementText);
-					if(elementText.equals(textToSearch)){
-						modifiedXpath = xpath + "[" + elements.get(i) + "]";
-					}else{
-						modifiedXpath = xpath + "/child::*";
-						searchChildNodes(modifiedXpath, textToSearch);
-					}
-				}
-			}
-		}catch(Exception e){
-			modifiedXpath = xpath.substring(0, xpath.lastIndexOf("/child::*"));
-			nodeInfo..add(0, modifiedXpath);
-			nodeInfo[1] = "false";
-		}
-		return nodeInfo;
 	}
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
