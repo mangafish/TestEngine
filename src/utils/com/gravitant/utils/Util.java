@@ -602,13 +602,6 @@ public class Util extends CSV_Reader{
 		int seconds = Integer.parseInt(time);
 		Thread.sleep(seconds *1000);
 	}
-	/*public Boolean hasMoreThanOneOption(WebDriver driver, String objectLocatorType, String locatorValue){
-		boolean moreThanOneOption = false;
-		if(driver.findElements(By.xpath(locatorValue)).size() > 1){
-			moreThanOneOption = true;
-		}
-		return moreThanOneOption;
-	}*/
 	
 	public boolean waitForObject(String objectName, String objectLocatorType, String locatorValue) throws IOException{
 		WebDriverWait wait = new WebDriverWait(driver, this.globalWaitTime);
@@ -649,7 +642,6 @@ public class Util extends CSV_Reader{
 		if(waitForObject("Button", objectLocatorType, locatorValue) == true){
 			WebElement button = driver.findElement(findObject(objectLocatorType, locatorValue));
 			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", button);
-			//button.click();
 		}
 	}
 	public void clickButtonWithText(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
