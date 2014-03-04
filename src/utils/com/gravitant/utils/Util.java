@@ -119,11 +119,10 @@ public class Util extends CSV_Reader{
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
 		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
-        //String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TE_0.7"));
 		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_4.0"));
 		this.setTestEnginePath(testConfigDirectory);
 		return jarFilePath;
-       /* this.setTestEnginePath(jarFilePath);
+        /*this.setTestEnginePath(jarFilePath);
         return jarFilePath;*/
 	}
 	public void setTestEnginePath(String path){
@@ -625,9 +624,9 @@ public class Util extends CSV_Reader{
 			e.printStackTrace();
 			this.setErrorFlag(true);
 	    	LOGS.info(objectName  + " is not displayed or has changed position");
+	    	LOGS.info(e.getMessage());
 			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, objectName + " is not displayed or has changed position."));
 			this.captureScreen(this.currentTestName);
-	    	LOGS.info(e.getMessage());
 	    	this.msgbox("Cannot find: " + objectName + "\n Timeout limit reached.");
 		}
 		return objectExists;
@@ -681,29 +680,48 @@ public class Util extends CSV_Reader{
 		String webTableXpath = null;
 		String menuXpath = null;
 		boolean foundMenuItem = false;
-		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
+		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table/tbody";
 		//System.out.println("Table xpath: " + webTableXpath);
+		LOGS.info("Table xpath: " + webTableXpath);
 		if(waitForObject(listItem, objectLocatorType, locatorValue) == true){
 			WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 			List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 			//System.out.println("Total Rows: " + rows.size()); //print number of rows
-			for (int rowNum=1; rowNum<rows.size(); rowNum++){
+			LOGS.info("Total Rows: " + rows.size()); 
+			for (int rowNum=0; rowNum<rows.size(); rowNum++){
+				System.out.println("Row No.: " + rowNum);
 				//System.out.println(rows.get(rowNum).getText());
 				if(foundMenuItem==true){break;}else{
-					List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-					//System.out.println("Total Columns: " + columns.size()); //print number of columns
+					WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr[" + (rowNum+1) + "]"));
+					List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'tr' (rows)
+					System.out.println("Total Columns: " + columns.size()); //print number of columns
+					//LOGS.info("Total Columns: " + columns.size()); 
 					for(int colNum=0; colNum<columns.size(); colNum++){
+						System.out.println("Row No.: " + rowNum);
 						String cellText = columns.get(colNum).getText().trim();
 						//System.out.println(cellText);
+						LOGS.info("Cell value: " + cellText);
 						if(cellText.contains(listItem.trim())){
-							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("td[")+5);
+							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr[" + (rowNum+1) + "]"));
 							//System.out.println(xpathSubString);
-							menuXpath = webTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td[" + colNum + "]" + xpathSubString;
+							LOGS.info("Xpath substring: " + xpathSubString);
+							menuXpath = webTableXpath + xpathSubString;
 							//System.out.println(menuXpath );
-							WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
-							((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
-							foundMenuItem = true;
-							break;
+							LOGS.info("Menu xpath: " + menuXpath);
+							try{
+								WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
+								((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
+								foundMenuItem = true;
+								break;
+							}catch(Exception e){
+								e.printStackTrace();
+								this.setErrorFlag(true);
+						    	LOGS.info(listItem  + " is not displayed or has changed position");
+								this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, listItem + " is not displayed or has changed position."));
+								this.captureScreen(this.currentTestName);
+						    	LOGS.info(e.getMessage());
+						    	this.msgbox("Cannot find: " + listItem + "\n Timeout limit reached.");
+							}
 						}
 					}
 				}
