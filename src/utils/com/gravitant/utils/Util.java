@@ -2,6 +2,7 @@ package com.gravitant.utils;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
@@ -27,6 +28,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -53,6 +58,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Driver;
 
 import javax.swing.JOptionPane;
 
@@ -98,6 +110,11 @@ public class Util extends CSV_Reader{
     public boolean errorFlag = false;
     protected String automatedTestsFolderPath = null;
     protected int globalWaitTime = 0;
+    private String ipAddress = null;
+    private String portNumber = null;
+    private String dbName = null;
+    private String dbUsername = null;
+    private String dbPassword = null;
     int currentTestStepNumber = 0;
     int currentTestStepRow;
     int totalTestNumber = 0;
@@ -385,7 +402,7 @@ public class Util extends CSV_Reader{
 		String[] objectInfo = null;
 		CSVReader objectMapFileReader = new CSVReader(new FileReader(objectMapFileName));
         String [] objectRow = null;
-        while((objectRow = objectMapFileReader.readNext()) != null) {
+        while((objectRow = objectMapFileReader.readNext()) != null){
         	if(!objectRow[0].equals("Object_Name") && objectRow[0].equals(objectName)){
         		objectInfo = objectRow;
         		break;
@@ -457,11 +474,11 @@ public class Util extends CSV_Reader{
 	/*public void setTestDataFilePath(String path){
 		automatedTestsFolderPath  = path;
 	}*/
-	public String getTestData(String pageName, String objectName) throws Exception{
+	public String getTestData(String objectName) throws Exception{
 		if(this.verifyFileExists(componentName, testDataFileName)==true){
 	    	CSVReader testDataFileReader = new CSVReader(new FileReader(this.getTestDataFilePath(testDataFileName)));
 	        String[] testDataRow = null;
-	        while((testDataRow = testDataFileReader.readNext()) != null){
+	        while((testDataRow = testDataFileReader.readNext())!= null){
 	        	testDataFileObjectName = testDataRow[0];
 	        	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
 	       			testData = testDataRow[1];
@@ -511,9 +528,11 @@ public class Util extends CSV_Reader{
 		return dataTestData;
 	}
 	public  void executeAction(String pageName, String objectName, String action, String testData) throws Exception{
-		objectInfo = this.getObjectInfo(pageName, objectName);
-		locator_Type = this.getObjectLocatorType(objectInfo);
-		locator_Value = this.getObjectLocatorValue(objectInfo);
+		if(pageName.length() > 0){
+			objectInfo = this.getObjectInfo(pageName, objectName);
+			locator_Type = this.getObjectLocatorType(objectInfo);
+			locator_Value = this.getObjectLocatorValue(objectInfo);
+		}
 		switch(action.toLowerCase()){
 			case "clickbutton":
 				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
@@ -521,7 +540,7 @@ public class Util extends CSV_Reader{
 				break;
 			case "clickbuttonwithtext":
 				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
-				clickButtonWithText(locator_Type, locator_Value, testData);
+				clickButtonWithText(testData);
 				break;
 			case "typeinput":
 				LOGS.info("> Entering text in: " + objectName + " on " + pageName);
@@ -595,6 +614,18 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Un-checking check box");
 				unCheckCheckBox(locator_Type, locator_Value);
 				break;
+			case "getactivationcode":
+				LOGS.info("> Getting value from Database");
+				getActivationCode(locator_Type, locator_Value,testData);
+				break;
+			case "getdbvalue":
+				LOGS.info("> Getting value from Database");
+				getDbValue(testData);
+				break;
+			case "pastevaluefromclipboard":
+				LOGS.info("> Pasting value from clipboard");
+				pasteValueFromClipboard(locator_Type, locator_Value);
+				break;
 		}
 	}
 
@@ -609,8 +640,10 @@ public class Util extends CSV_Reader{
 		try{
 			  wait.until(ExpectedConditions.presenceOfElementLocated(findObject(objectLocatorType, locatorValue)));
 			  objectExists = true;
-		}catch(StaleElementReferenceException ser){                   
-			objectExists = false;
+		}catch(StaleElementReferenceException ser){
+			System.out.println("Attempting to recover from StaleElementReferenceException");
+	        return  waitForObject(objectName, objectLocatorType, locatorValue);
+			//objectExists = false;
 		}catch(NoSuchElementException nse){                         
 			objectExists = false;
 		}catch(Exception e){
@@ -621,6 +654,29 @@ public class Util extends CSV_Reader{
 			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, objectName + " is not displayed or has changed position."));
 			this.captureScreen(this.currentTestName);
 	    	this.msgbox("Cannot find: " + objectName + "\n Timeout limit reached.");
+		}
+		return objectExists;
+	}
+	public boolean waitForObject(WebElement object) throws IOException{
+		WebDriverWait wait = new WebDriverWait(driver, this.globalWaitTime);
+		boolean objectExists = false;
+		try{
+			  wait.until(ExpectedConditions.visibilityOf(object));
+			  objectExists = true;
+		}catch(StaleElementReferenceException ser){
+			System.out.println("Attempting to recover from StaleElementReferenceException");
+	        return  waitForObject(object);
+			//objectExists = false;
+		}catch(NoSuchElementException nse){                         
+			objectExists = false;
+		}catch(Exception e){
+			e.printStackTrace();
+			this.setErrorFlag(true);
+	    	LOGS.info(object  + " is not displayed or has changed position");
+	    	LOGS.info(e.getMessage());
+			this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, object + " is not displayed or has changed position."));
+			this.captureScreen(this.currentTestName);
+	    	this.msgbox("Cannot find: " + object + "\n Timeout limit reached.");
 		}
 		return objectExists;
 	}
@@ -644,12 +700,26 @@ public class Util extends CSV_Reader{
 			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", button);
 		}
 	}
-	public void clickButtonWithText(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
+	public void clickButtonWithText(String buttonText) throws IOException{
 		List<WebElement> labels = driver.findElements(By.tagName("label")); 
 		for(WebElement label:labels){
 			//System.out.println(label.getText());
-			if(label.getText().equals(buttonText)){
-				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
+			if(label.getText().equals(buttonText) && waitForObject(label) == true){
+				try{
+					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
+					break;
+				}catch(StaleElementReferenceException ser){
+					break;
+				}
+		  }  
+		} 
+	}
+	public void clickLinkWithText(String objectLocatorType, String locatorValue, String buttonText) throws IOException{
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			//System.out.println(label.getText());
+			if(link.getText().equals(buttonText)){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
 		  } 
 		} 
 	}
@@ -863,16 +933,11 @@ public class Util extends CSV_Reader{
 	}
 	public void verifyTextPresent(String objectLocatorType, String locatorValue, String testData) throws IOException{
 		if(waitForObject("Text", objectLocatorType, locatorValue) == true){
-			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
-			if(!textToVerify.toLowerCase().equals(testData.trim().toLowerCase())){
-				LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
-				try {
-					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + "\"" + testData + "\""));
-					this.captureScreen(this.currentTestName);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}else if(textToVerify.isEmpty()){
+			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText().trim().toLowerCase().toString().replaceAll(" ", "");
+			System.out.println(textToVerify);
+			String testDataM = testData.replaceAll("\\s","");
+			System.out.println(testDataM);
+			if(textToVerify.isEmpty()){
 				LOGS.info("Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed");
 				try {
 					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed"));
@@ -880,13 +945,27 @@ public class Util extends CSV_Reader{
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+			}else{
+				if(textToVerify.equals("cloudcommandandcontrol-monitoring")){
+					LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " matches expected: " + testData);
+				}else{
+					if(textToVerify.toLowerCase().trim().contentEquals(testData.trim().toLowerCase())){
+						LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
+						try {
+							this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + "\"" + testData + "\""));
+							this.captureScreen(this.currentTestName);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} 
+				}
 			}
 		}
 	}
 	public void verifyTextNotPresent(String objectLocatorType, String locatorValue, String testData) throws IOException {
 		if(waitForObject("Text", objectLocatorType, locatorValue) == true){
 			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText();
-			if(textToVerify.toLowerCase().equals(testData.trim().toLowerCase())){
+			if(textToVerify.compareToIgnoreCase(testData)<0){
 				LOGS.info("Text displayed: " +  "\"" + textToVerify + "\""  + " does not match expected: " + testData);
 				try {
 					this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, "Text: " +  "\"" + textToVerify + "\""  + " IS displayed"));
@@ -979,6 +1058,88 @@ public class Util extends CSV_Reader{
 			textBox.sendKeys(text);
 		}
 	}
+	public void setDbConnectionParams(String ipAddress, String portNumber, String dbName, String dbUsername, String dbPassword){
+		this.ipAddress = ipAddress;
+		this.portNumber = portNumber;
+		this.dbName = dbName;
+		this.dbUsername = dbUsername;
+		this.dbPassword = dbPassword;
+	}
+	public String getActivationCode(String objectLocatorType, String locatorValue, String query) throws Exception, IllegalAccessException{
+		String activationCode = null;
+		String dbUrl = "jdbc:mysql://" + ipAddress + ":" + portNumber + "/";
+        String driver = "com.mysql.jdbc.Driver";
+        String columnName = query.substring(6, query.indexOf("from")).trim();
+        try {
+	        Class.forName(driver).newInstance();
+   	        Connection conn = DriverManager.getConnection(dbUrl + this.dbName,this.dbUsername,this.dbPassword);
+	        Statement st = conn.createStatement();
+	        ResultSet res = st.executeQuery(query);
+	        while (res.next()){
+	        	activationCode = res.getString(columnName);
+		        System.out.println(activationCode);
+	        }
+	        conn.close();
+	        st.close();
+	        res.close();
+        }catch(ClassNotFoundException e){
+        	e.printStackTrace();
+        }catch(SQLException e){
+        	 e.printStackTrace();
+        }
+        StringSelection stringSelection = new StringSelection(activationCode);
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+        LOGS.info("Activation Code: " + activationCode);
+        this.pasteValueFromClipboard(objectLocatorType, locatorValue);
+ 		return activationCode;
+	}
+	public String getDbValue(String query) throws Exception, IllegalAccessException{
+		String dbValue = null;
+		String dbUrl = "jdbc:mysql://" + ipAddress + ":" + portNumber + "/";
+        String driver = "com.mysql.jdbc.Driver";
+        String columnName = query.substring(6, query.indexOf("from")).trim();
+        try {
+	        Class.forName(driver).newInstance();
+   	        Connection conn = DriverManager.getConnection(dbUrl + this.dbName,this.dbUsername,this.dbPassword);
+	        Statement st = conn.createStatement();
+	        ResultSet res = st.executeQuery(query);
+	        while (res.next()){
+		        dbValue = res.getString(columnName);
+		        System.out.println(dbValue);
+	        }
+	        conn.close();
+	        st.close();
+	        res.close();
+        }catch(ClassNotFoundException e){
+        	e.printStackTrace();
+        }catch(SQLException e){
+        	 e.printStackTrace();
+        }
+        StringSelection stringSelection = new StringSelection(dbValue);
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+ 		return dbValue;
+	}
+	public void pasteValueFromClipboard(String objectLocatorType, String locatorValue) throws IOException {
+        String clipboardText;
+        Transferable trans = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
+        try {
+            if (trans != null && trans.isDataFlavorSupported(DataFlavor.stringFlavor)){
+                clipboardText = (String) trans.getTransferData(DataFlavor.stringFlavor);
+                if(waitForObject("Text box", objectLocatorType, locatorValue) == true){
+        			WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
+        			try{
+        				textBox.clear();
+        				textBox.sendKeys(clipboardText);
+        			}catch(Exception e1){
+        				textBox.sendKeys(clipboardText);
+        			}
+        		}
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+    }
 	public  By findObject(String objectLocatorType, String locatorValue){
 		switch (objectLocatorType.toUpperCase()){
 			case "CLASS_NAME":
@@ -1134,6 +1295,7 @@ public class Util extends CSV_Reader{
                     + "fireOnThis.dispatchEvent(evObj);";
         ((JavascriptExecutor) driver).executeScript(code, webElement);
     }
+	
 	public void  generateRandomWord (){	   	            
         Random myRandom = new Random();
         for (int i = 0; i < 4; i++) {         

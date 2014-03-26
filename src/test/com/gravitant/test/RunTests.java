@@ -47,6 +47,11 @@ public class RunTests{
     public String closeBrowser = null;
     public String automatedTestsFolderPath = null;
     public int globalWaitTime = 0;
+    private String ipAddress = null;
+    private String portNumber = null;
+    private String dbName = null;
+    private String dbUsername = null;
+    private String dbPassword = null;
     
     public String[] testStepRow = null;
     public String action = null;
@@ -91,6 +96,11 @@ public class RunTests{
 		automatedTestsFolderPath = util.getTestConfigProperty("Path to Automated Tests");
 		globalWaitTime = Integer.parseInt(util.getTestConfigProperty("Wait time(seconds)"));
 		closeBrowser = util.getTestConfigProperty("Close Browser at end of test");
+		ipAddress = util.getTestConfigProperty("Db Ip Address");
+		portNumber = util.getTestConfigProperty("Db Port Number");
+		dbName = util.getTestConfigProperty("Db Name");
+		dbUsername = util.getTestConfigProperty("Db Username");
+		dbPassword = util.getTestConfigProperty("Db Password");
 		//******* Set log file location ****************//
 		System.setProperty("TestEngineLog", testEnginePath + "\\TestEngineLog\\TestEngineLog.log");
 		//System.out.println(System.getProperty("TestEngineLog"));
@@ -108,16 +118,18 @@ public class RunTests{
 		util.setCurrentResultFileName(currentResultFileName);
 		util.setCurrentDate(currentDate);
 		util.setCurrentTime(currentTime);
+		//*******Set Db connection properties *************//
+		util.setDbConnectionParams(ipAddress,portNumber,dbName,dbUsername,dbPassword);
+		//*******Set test config properties *************//
+        util.setTestDirectoryPath(automatedTestsFolderPath);
+        util.setGlobalWaitTime(globalWaitTime);
 		//******* Launch browser and navigate to Url *******//
 		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "warn");
 		util.launchBrowser(browserType);
 		util.navigateToUrl(environment);
-		//*******Get test cases to run from TestsToRun.txt *************//
-        util.setTestDirectoryPath(automatedTestsFolderPath);
-        util.setGlobalWaitTime(globalWaitTime);
+      //*******Get test cases to run from TestsToRun.txt *************//
         testsToRun = util.getTestsToRun();
-        //System.out.println(testsToRun);
 		for(int i=0; i<=testsToRun.size()-1; i++){
 			if(util.getErrorFlag()==true){break;}
 			componentName = util.getComponentName(testsToRun.get(i));
@@ -153,10 +165,10 @@ public class RunTests{
 						    testStep = testStepRow[1];
 				        	util.setCurrentTestStep(testStep);
 						    if(action.equals("begin_dataTest")){
-						    	datatestIterations = Integer.parseInt(util.getTestData(testStepPageName, testStepObjectName));
+						    	datatestIterations = Integer.parseInt(util.getTestData(testStepObjectName));
 						    	util.setCurrentTestStepNumber(j);
 						    }else{
-						    	testData = util.getTestData(testStepPageName, testStepObjectName);
+						    	testData = util.getTestData(testStepObjectName);
 							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 							    if(util.errorFlag==true){break;}
 						    }
@@ -198,7 +210,7 @@ public class RunTests{
 							    action = testStepRow[4];
 							    testStep = testStepRow[1];
 					        	util.setCurrentTestStep(testStep);
-							    testData = util.getTestData(testStepPageName, testStepObjectName);
+							    testData = util.getTestData(testStepObjectName);
 							    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 							    if(util.errorFlag==true){break;}
 				    	}
@@ -212,23 +224,23 @@ public class RunTests{
 				    	testStepRow = testCaseContent.get(j);
 				    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 				    		testStepNumber = Integer.parseInt(testStepRow[0]);
-						    testStepPageName = testStepRow[2];
+				    		testStep = testStepRow[1];
+				    		testStepPageName = testStepRow[2];
 						    testStepObjectName = testStepRow[3];
 						    action = testStepRow[4];
-						    testStep = testStepRow[1];
 				        	util.setCurrentTestStep(testStep);
 				        	util.setCurrentTestStepNumber(testStepNumber);
-						    testData = util.getTestData(testStepPageName, testStepObjectName);
+						    testData = util.getTestData(testStepObjectName);
 						    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 						    if(util.errorFlag==true){break;}
 				    	}
 					}
 			    }
-			}/*else{
-				*//*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******//*
-				//LOGS.info("**** Test case: " + "\"" + currentTestName + "\"" +  " does not exist in Test_Cases folder ****");
+			}else{
+				/*******If test case DOES NOT exist in Test_Cases folder, report it in the logs and move on to next test case*******/
+				LOGS.info("**** Test case: " + "\"" + currentTestName + "\"" +  " does not exist in Test_Cases folder ****");
 				continue;
-			}*/
+			}
 		}
 		util.setFailedTestsNumber();
 		util.writeTestResultsFile();
