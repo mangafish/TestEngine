@@ -700,16 +700,15 @@ public class Util extends CSV_Reader{
 			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", button);
 		}
 	}
-	public void clickButtonWithText(String buttonText) throws IOException{
+	public void clickButtonWithText(String buttonText) throws IOException, InterruptedException{
+		Thread.sleep(3000);
 		List<WebElement> labels = driver.findElements(By.tagName("label")); 
 		for(WebElement label:labels){
-			//System.out.println(label.getText());
-			if(label.getText().equals(buttonText) && waitForObject(label) == true){
-				try{
+			String labelText  = label.getText();
+			System.out.println(label.getText());
+			if(labelText.equals(buttonText)){
+				if(waitForObject(label)==true){
 					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
-					break;
-				}catch(StaleElementReferenceException ser){
-					break;
 				}
 		  }  
 		} 
@@ -886,20 +885,23 @@ public class Util extends CSV_Reader{
 		}
 	}
 	public String getRadioButtonXpath(String objectLocatorType, String locatorValue, String radioButtonValue){
+		String trimRadioButtonValue = radioButtonValue.trim().toLowerCase().replaceAll("[\\p{C}\\p{Z}]", "");
 		String radioButtonXpath = null;
 		String radioTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
 		//System.out.println(radioTableXpath);
 		WebElement table = driver.findElement(findObject(objectLocatorType, radioTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 		//System.out.println("No. of rows: " + rows.size());
-		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
+		for (int rowNum=1; rowNum<rows.size(); rowNum++){
 			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
-			//System.out.println("Total Columns: " + columns.size()); //print number of columns
-			 for (int colNum=0; colNum<=columns.size(); colNum++){
-				//System.out.println("Column #: " + colNum + " - " + columns.get(colNum).getText().trim().toLowerCase()); //print cell data
-				if(columns.get(colNum).getText().trim().toLowerCase().contains(radioButtonValue.trim().toLowerCase())){
+			//System.out.println("No. of columns: " + columns.size()); //print number of columns
+			 for (int colNum=0; colNum<=columns.size()-1; colNum++){
+				String columnText = columns.get(colNum).getText().trim().toLowerCase().replaceAll("[\\p{C}\\p{Z}]", "");
+				//System.out.println("Column #: " + colNum + " - " + columnText); //print cell data
+				if(columnText.contains(trimRadioButtonValue)){
 					int correctedColNum =colNum +1;
-					radioButtonXpath = radioTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
+					//radioButtonXpath = radioTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
+					radioButtonXpath = radioTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td/input";
 					break;
 				}
 			}
