@@ -135,12 +135,12 @@ public class Util extends CSV_Reader{
 	public String getTestEnginePath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
-		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
+		/*String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
 		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_4.0"));
 		this.setTestEnginePath(testConfigDirectory);
-		return jarFilePath;
-        /*this.setTestEnginePath(jarFilePath);
-        return jarFilePath;*/
+		return jarFilePath;*/
+        this.setTestEnginePath(jarFilePath);
+        return jarFilePath;
 	}
 	public void setTestEnginePath(String path){
 		testEnginePath  = path;
@@ -598,10 +598,6 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
 				clickListMenuItem(locator_Type, locator_Value, testData);
 				break;
-			case "verifypagetitle":
-				LOGS.info("> Verifying page title on: " + pageName);
-				verifyPageTitle(testData);
-				break;
 			case "savefile":
 				LOGS.info("> Saving file");
 				saveFile();
@@ -622,9 +618,17 @@ public class Util extends CSV_Reader{
 				LOGS.info("> Getting value from Database");
 				getDbValue(testData);
 				break;
-			case "pastevaluefromclipboard":
+			case "pastevaluefromclipboard"://gotToHomePageFromLink
 				LOGS.info("> Pasting value from clipboard");
 				pasteValueFromClipboard(locator_Type, locator_Value);
+				break;
+			case "gottohomepagefromlink":
+				LOGS.info("> Clicking Home link");
+				gotToHomePageFromLink();
+				break;
+			case "gottohomepagefromlogo":
+				LOGS.info("> Clicking Logo");
+				gotToHomePageFromLogo();
 				break;
 		}
 	}
@@ -705,7 +709,7 @@ public class Util extends CSV_Reader{
 		List<WebElement> labels = driver.findElements(By.tagName("label")); 
 		for(WebElement label:labels){
 			String labelText  = label.getText();
-			System.out.println(label.getText());
+			//System.out.println(label.getText());
 			if(labelText.equals(buttonText)){
 				if(waitForObject(label)==true){
 					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
@@ -720,6 +724,30 @@ public class Util extends CSV_Reader{
 			if(link.getText().equals(buttonText)){
 				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
 		  } 
+		} 
+	}
+	public void gotToHomePageFromLink() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			//String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Home")){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+				break;
+		  } 
+		} 
+	}
+	public void gotToHomePageFromLogo() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> images = driver.findElements(By.xpath("//a/img")); //html/body/div[1]/div[1]/div/form[1]/div[2]/div[1]/a/img 
+		for(WebElement image:images){
+			if(waitForObject(image)==true){
+				if(image.getAttribute("src").contains("logo")){
+					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", image);
+					break;
+				}
+			}
 		} 
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){

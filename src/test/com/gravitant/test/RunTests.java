@@ -224,7 +224,7 @@ public class RunTests{
 				    	testStepRow = testCaseContent.get(j);
 				    	if(!testStepRow[0].contains("#") && !testStepRow[0].contains("Step")){
 				    		testStepNumber = Integer.parseInt(testStepRow[0]);
-				    		testStep = testStepRow[1];
+				    		testStep = testStepRow[1]; 
 				    		testStepPageName = testStepRow[2];
 						    testStepObjectName = testStepRow[3];
 						    action = testStepRow[4];
