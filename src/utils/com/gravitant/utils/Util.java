@@ -46,9 +46,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,6 +117,7 @@ public class Util extends CSV_Reader{
     private String dbName = null;
     private String dbUsername = null;
     private String dbPassword = null;
+    private String environment = null;
     int currentTestStepNumber = 0;
     int currentTestStepRow;
     int totalTestNumber = 0;
@@ -135,12 +138,12 @@ public class Util extends CSV_Reader{
 	public String getTestEnginePath(){
 		File jarFile = new File(RunTests.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String jarFilePath = jarFile.getAbsolutePath();
-		/*String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
+		String jarRootDirectoryPath = jarFilePath.replace(jarFile.getName(), "");
 		String testConfigDirectory = jarRootDirectoryPath.substring(0, jarRootDirectoryPath.indexOf("TestProject_4.0"));
 		this.setTestEnginePath(testConfigDirectory);
-		return jarFilePath;*/
-        this.setTestEnginePath(jarFilePath);
-        return jarFilePath;
+		return jarFilePath;
+        /*this.setTestEnginePath(jarFilePath);
+        return jarFilePath;*/
 	}
 	public void setTestEnginePath(String path){
 		testEnginePath  = path;
@@ -533,104 +536,116 @@ public class Util extends CSV_Reader{
 			locator_Type = this.getObjectLocatorType(objectInfo);
 			locator_Value = this.getObjectLocatorValue(objectInfo);
 		}
-		switch(action.toLowerCase()){
-			case "clickbutton":
-				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
-				clickButton(locator_Type, locator_Value);
-				break;
-			case "clickbuttonwithtext":
-				LOGS.info("> Clicking button: " + objectName + " on " + pageName);
-				clickButtonWithText(testData);
-				break;
-			case "typeinput":
-				LOGS.info("> Entering text in: " + objectName + " on " + pageName);
-				enterText(locator_Type, locator_Value, testData);
-				break;
-			case "clicklink":
-				LOGS.info("> Clicking link: " + objectName + " on " + pageName);
-				clickLink(locator_Type, locator_Value);
-				break;
-			case "selectlistitem":
-				LOGS.info("> Selecting combo item: " + "\"" + testData + "\"" + " in " + objectName);
-				selectListBoxItem(locator_Type, locator_Value, testData);
-				break;
-			case "selectradiobuttonitem":
-				LOGS.info("> Selecting radio item: " + testData + " in " + objectName);
-				selectRadioButtonItem(locator_Type, locator_Value, testData);
-  				break;
-			case "switchtopopup":
-				LOGS.info("> Switching to popup" );
-				switchToPopup();
-				break;
-			case "getmainwindowhandle":
-				LOGS.info("> Getting main window handle");
-				getMainWindowHandle();
-				break;
-			case "verifytextpresent":
-				LOGS.info("> Verifying text displays: " + testData);
-				verifyTextPresent(locator_Type, locator_Value, testData);
-				break;
-			case "verifytextnotpresent":
-				LOGS.info("> Verifying text DOES NOT display: " + testData);
-				verifyTextNotPresent(locator_Type, locator_Value, testData);
-				break;
-			case "wait":
-				LOGS.info("> Waiting for: " + testData + " seconds");
-				waitForObject(testData);
-				break;
-			case "scrolldown":
-				LOGS.info("> Scrolling down");
-				scrollDown();
-				break;
-			case "savescreenshot":
-				LOGS.info("> Capturing screenshot: " + pageName);
-				captureScreen(pageName);
-				break;
-			case "getcelldata":
-				LOGS.info("> Getting cell data: " + pageName);
-				getCellData(locator_Type, locator_Value);
-				break;
-			case "clickmenuitem":
-				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
-				clickMenuItem(locator_Type, locator_Value);
-				break;
-			case "clicklistmenuitem":
-				LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
-				clickListMenuItem(locator_Type, locator_Value, testData);
-				break;
-			case "savefile":
-				LOGS.info("> Saving file");
-				saveFile();
-				break;
-			case "checkcheckbox":
-				LOGS.info("> Checking check box");
-				checkCheckBox(locator_Type, locator_Value);
-				break;
-			case "uncheckcheckbox":
-				LOGS.info("> Un-checking check box");
-				unCheckCheckBox(locator_Type, locator_Value);
-				break;
-			case "getactivationcode":
-				LOGS.info("> Getting value from Database");
-				getActivationCode(locator_Type, locator_Value,testData);
-				break;
-			case "getdbvalue":
-				LOGS.info("> Getting value from Database");
-				getDbValue(testData);
-				break;
-			case "pastevaluefromclipboard"://gotToHomePageFromLink
-				LOGS.info("> Pasting value from clipboard");
-				pasteValueFromClipboard(locator_Type, locator_Value);
-				break;
-			case "gottohomepagefromlink":
-				LOGS.info("> Clicking Home link");
-				gotToHomePageFromLink();
-				break;
-			case "gottohomepagefromlogo":
-				LOGS.info("> Clicking Logo");
-				gotToHomePageFromLogo();
-				break;
-		}
+			switch(action.toLowerCase()){
+				case "clickbutton":
+					LOGS.info("> Clicking button: " + objectName + " on " + pageName);
+					clickButton(locator_Type, locator_Value);
+					break;
+				case "clickbuttonwithtext":
+					LOGS.info("> Clicking button: " + objectName + " on " + pageName);
+					clickButtonWithText(testData);
+					break;
+				case "typeinput":
+					LOGS.info("> Entering text in: " + objectName + " on " + pageName);
+					enterText(locator_Type, locator_Value, testData);
+					break;
+				case "clicklink":
+					LOGS.info("> Clicking link: " + objectName + " on " + pageName);
+					clickLink(locator_Type, locator_Value);
+					break;
+				case "selectlistitem":
+					LOGS.info("> Selecting combo item: " + "\"" + testData + "\"" + " in " + objectName);
+					selectListBoxItem(locator_Type, locator_Value, testData);
+					break;
+				case "selectradiobuttonitem":
+					LOGS.info("> Selecting radio item: " + testData + " in " + objectName);
+					selectRadioButtonItem(locator_Type, locator_Value, testData);
+	  				break;
+				case "switchtopopup":
+					LOGS.info("> Switching to popup" );
+					switchToPopup();
+					break;
+				case "closepopup":
+					LOGS.info("> Closing popup" );
+					closePopup();
+					break;
+				case "switchtomainwindow":
+					LOGS.info("> Closing popup" );
+					switchToMainWindow();
+					break;
+				case "getmainwindowhandle":
+					LOGS.info("> Getting main window handle");
+					getMainWindowHandle();
+					break;
+				case "verifytextpresent":
+					LOGS.info("> Verifying text displays: " + testData);
+					verifyTextPresent(locator_Type, locator_Value, testData);
+					break;
+				case "verifytextnotpresent":
+					LOGS.info("> Verifying text DOES NOT display: " + testData);
+					verifyTextNotPresent(locator_Type, locator_Value, testData);
+					break;
+				case "wait":
+					LOGS.info("> Waiting for: " + testData + " seconds");
+					waitForObject(testData);
+					break;
+				case "scrolldown":
+					LOGS.info("> Scrolling down");
+					scrollDown();
+					break;
+				case "savescreenshot":
+					LOGS.info("> Capturing screenshot: " + pageName);
+					captureScreen(pageName);
+					break;
+				case "getcelldata":
+					LOGS.info("> Getting cell data: " + pageName);
+					getCellData(locator_Type, locator_Value);
+					break;
+				case "clickmenuitem":
+					LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
+					clickMenuItem(locator_Type, locator_Value);
+					break;
+				case "clicklistmenuitem":
+					LOGS.info("> Clicking menu item: " + objectName + " on " + pageName);
+					clickListMenuItem(locator_Type, locator_Value, testData);
+					break;
+				case "savefile":
+					LOGS.info("> Saving file");
+					saveFile();
+					break;
+				case "checkcheckbox":
+					LOGS.info("> Checking check box");
+					checkCheckBox(locator_Type, locator_Value);
+					break;
+				case "uncheckcheckbox":
+					LOGS.info("> Un-checking check box");
+					unCheckCheckBox(locator_Type, locator_Value);
+					break;
+				case "getactivationcode":
+					LOGS.info("> Getting value from Database");
+					getActivationCode(locator_Type, locator_Value,testData);
+					break;
+				case "getdbvalue":
+					LOGS.info("> Getting value from Database");
+					getDbValue(testData);
+					break;
+				case "pastevaluefromclipboard":
+					LOGS.info("> Pasting value from clipboard");
+					pasteValueFromClipboard(locator_Type, locator_Value);
+					break;
+				case "gottohomepagefromlink":
+					LOGS.info("> Clicking Home link");
+					gotToHomePageFromLink();
+					break;
+				case "gottohomepagefromlogo":
+					LOGS.info("> Clicking Logo");
+					gotToHomePageFromLogo();
+					break;
+				case "opensupportpopup":
+					LOGS.info("> Clicking Logo");
+					openSupportPopup();
+					break;
+			}
 	}
 
 	public void waitForObject(String time) throws Exception{
@@ -706,11 +721,12 @@ public class Util extends CSV_Reader{
 	}
 	public void clickButtonWithText(String buttonText) throws IOException, InterruptedException{
 		Thread.sleep(3000);
+		String trimBtnText = buttonText.trim().replaceAll("[\\p{C}\\p{Z}]", "");
 		List<WebElement> labels = driver.findElements(By.tagName("label")); 
 		for(WebElement label:labels){
-			String labelText  = label.getText();
-			//System.out.println(label.getText());
-			if(labelText.equals(buttonText)){
+			String labelText  = label.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(label.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(labelText.equals(trimBtnText)){
 				if(waitForObject(label)==true){
 					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
 				}
@@ -740,7 +756,7 @@ public class Util extends CSV_Reader{
 	}
 	public void gotToHomePageFromLogo() throws IOException, InterruptedException{
 		Thread.sleep(2000);
-		List<WebElement> images = driver.findElements(By.xpath("//a/img")); //html/body/div[1]/div[1]/div/form[1]/div[2]/div[1]/a/img 
+		List<WebElement> images = driver.findElements(By.xpath("//a/img"));  
 		for(WebElement image:images){
 			if(waitForObject(image)==true){
 				if(image.getAttribute("src").contains("logo")){
@@ -748,6 +764,18 @@ public class Util extends CSV_Reader{
 					break;
 				}
 			}
+		} 
+	}
+	public void openSupportPopup() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Support")){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+				break;
+		  } 
 		} 
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
@@ -958,6 +986,31 @@ public class Util extends CSV_Reader{
 	         String popupHandle=windows.next().toString();
 	         if(!popupHandle.contains(getMainWindowHandle())){
 	             driver.switchTo().window(popupHandle);
+	         }
+	    }
+	}
+	public void closePopup() throws InterruptedException{
+		Thread.sleep(2000);
+		String mainWindowHandle = driver.getWindowHandle();
+		Set<String> windowHandles = driver.getWindowHandles();
+		Iterator<String> windows = windowHandles.iterator();
+	    while(windows.hasNext()){
+	         String popupHandle = windows.next().toString();
+	         if(!popupHandle.contains(getMainWindowHandle())){
+	        	 driver.switchTo().window(popupHandle).close();
+	         }
+	    }
+	    driver.switchTo().window(mainWindowHandle);
+	    //this.switchToMainWindow();
+	}
+	public void switchToMainWindow() throws InterruptedException{
+		String mainWindowHandle = driver.getWindowHandle();
+		Set<String> windowHandles = driver.getWindowHandles();
+		Iterator<String> windows = windowHandles.iterator();
+	    while(windows.hasNext()){
+	         String currentHandle = windows.next().toString();
+	         if(currentHandle.contains(mainWindowHandle)){
+	        	 driver.switchTo().window(currentHandle);
 	         }
 	    }
 	}
@@ -1210,7 +1263,10 @@ public class Util extends CSV_Reader{
 			case "chrome":
 				browserPath = this.testEnginePath + "\\Chrome_Selenium\\" + "chromedriver.exe";
 				System.setProperty("webdriver.chrome.driver", browserPath);
-				driver = new ChromeDriver();
+				DesiredCapabilities chromeCapabilities = DesiredCapabilities.chrome();
+				chromeCapabilities.setJavascriptEnabled(true);
+				//chromeCapabilities.
+				driver = new ChromeDriver(chromeCapabilities);
 				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
 				LOGS.info("************ Launching Chrome browser ************");
@@ -1238,6 +1294,7 @@ public class Util extends CSV_Reader{
 	}
 	public  String navigateToUrl(String environment) throws MalformedURLException{
 		environment = environment.trim().toLowerCase();
+		this.environment = environment;
 		driver.navigate().to(environment);
 		return environment;
 	}
@@ -1269,7 +1326,11 @@ public class Util extends CSV_Reader{
 			  break;
 	  }
 	} 
-
+	public boolean isUrlReachable(String environment) throws UnknownHostException, IOException{
+		int timeOut = 3000;
+		boolean status = InetAddress.getByName("198.46.49.73").isReachable(timeOut);
+		return true;
+	}
 	public  String createFolder(String path, String folderName){
 		new File(path + "\\" + folderName).mkdir();
 		return path + "\\" + folderName;
