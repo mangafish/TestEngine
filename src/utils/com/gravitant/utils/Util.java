@@ -20,6 +20,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
@@ -747,7 +748,7 @@ public class Util extends CSV_Reader{
 		List<WebElement> links = driver.findElements(By.tagName("a")); 
 		for(WebElement link:links){
 			//String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
-			System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			//System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
 			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Home")){
 				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
 				break;
@@ -919,7 +920,8 @@ public class Util extends CSV_Reader{
 					String radioButtonXpath = this.getRadioButtonXpath(objectLocatorType, locatorValue, testData);
 					if(waitForObject("Radio button", objectLocatorType, radioButtonXpath)==true){
 						radioButton = driver.findElement(By.xpath(radioButtonXpath));
-						radioButton.click();
+						((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", radioButton);
+						//radioButton.click();
 					}
 				}catch(Exception e){
 					String xpath = ".//tr/td/label[contains(text(),'" + testData + "')]";
@@ -968,7 +970,7 @@ public class Util extends CSV_Reader{
 	public void checkCheckBox(String objectLocatorType, String locatorValue) throws IOException{
 		if(waitForObject("Check box", objectLocatorType, locatorValue) == true){
 			WebElement checkBox = driver.findElement(findObject(objectLocatorType, locatorValue));
-			checkBox.click();
+			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", checkBox);
 		}
 	}	
 	public void unCheckCheckBox(String objectLocatorType, String locatorValue) throws IOException{
@@ -1265,7 +1267,6 @@ public class Util extends CSV_Reader{
 				System.setProperty("webdriver.chrome.driver", browserPath);
 				DesiredCapabilities chromeCapabilities = DesiredCapabilities.chrome();
 				chromeCapabilities.setJavascriptEnabled(true);
-				//chromeCapabilities.
 				driver = new ChromeDriver(chromeCapabilities);
 				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				driver.manage().window().maximize();
