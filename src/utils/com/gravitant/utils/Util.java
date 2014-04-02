@@ -393,7 +393,7 @@ public class Util extends CSV_Reader{
 			for(int k=0;k<objectMapsList.length;k++){
 				//System.out.println(objectMapsList[k].getName());
 				if(objectMapsList[k].getName().equals(objectMapFileName)){
-					System.out.println(objectMapFileName);
+					//System.out.println(objectMapFileName);
 					break;
 				}
 			}
@@ -514,7 +514,7 @@ public class Util extends CSV_Reader{
 	}
 	public ArrayList<String> getDataTestData(String pageName, String objectName) throws Exception{
 		ArrayList<String> dataTestData =  new ArrayList<String>();
-		System.out.println(dataTestData);
+		//System.out.println(dataTestData);
 		testDataFileName = this.getTestDataFilePath(pageName);
     	CSVReader testDataFileReader = new CSVReader(new FileReader(testDataFileName));
         String[] testDataRow = null;
@@ -522,7 +522,7 @@ public class Util extends CSV_Reader{
         	testDataFileObjectName = testDataRow[0];
         	if(!testDataFileObjectName.equals("Object_Name") && testDataFileObjectName.equals(objectName)){
         		for(int i=1;i<testDataRow.length;i++){
-        			System.out.println(testDataRow[i]);
+        			//System.out.println(testDataRow[i]);
         			dataTestData.add(testDataRow[i]); 
         		}
     			break;
@@ -645,6 +645,18 @@ public class Util extends CSV_Reader{
 				case "opensupportpopup":
 					LOGS.info("> Clicking Logo");
 					openSupportPopup();
+					break;
+				case "gotoprofilepage":
+					LOGS.info("> Clicking Logo");
+					goToProfilePage();
+					break;
+				case "openhelppopup":
+					LOGS.info("> Clicking Logo");
+					openHelpPopup();
+					break;
+				case "logout":
+					LOGS.info("> Clicking Logo");
+					logout();
 					break;
 			}
 	}
@@ -779,6 +791,42 @@ public class Util extends CSV_Reader{
 		  } 
 		} 
 	}
+	public void openHelpPopup() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Help")){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+				break;
+		  } 
+		} 
+	}
+	public void goToProfilePage() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			//String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Profile")){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+				break;
+		  } 
+		} 
+	}
+	public void logout() throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		List<WebElement> links = driver.findElements(By.tagName("a")); 
+		for(WebElement link:links){
+			//String linkText = link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(link.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "").equals("Logout")){
+				((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+				break;
+		  } 
+		} 
+	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
@@ -800,32 +848,26 @@ public class Util extends CSV_Reader{
 		boolean foundMenuItem = false;
 		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table/tbody";
 		//System.out.println("Table xpath: " + webTableXpath);
-		LOGS.info("Table xpath: " + webTableXpath);
 		if(waitForObject(listItem, objectLocatorType, locatorValue) == true){
 			WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 			List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
 			//System.out.println("Total Rows: " + rows.size()); //print number of rows
-			LOGS.info("Total Rows: " + rows.size()); 
-			for (int rowNum=0; rowNum<rows.size(); rowNum++){
-				System.out.println("Row No.: " + rowNum);
+			for (int rowNum=1; rowNum<=rows.size(); rowNum++){
+				//System.out.println("Row No.: " + rowNum);
 				//System.out.println(rows.get(rowNum).getText());
 				if(foundMenuItem==true){break;}else{
 					WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr[" + (rowNum+1) + "]"));
 					List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'tr' (rows)
-					System.out.println("Total Columns: " + columns.size()); //print number of columns
-					//LOGS.info("Total Columns: " + columns.size()); 
+					//System.out.println("Total Columns: " + columns.size()); //print number of columns
 					for(int colNum=0; colNum<columns.size(); colNum++){
-						System.out.println("Row No.: " + rowNum);
+						//System.out.println("Row No.: " + rowNum);
 						String cellText = columns.get(colNum).getText().trim();
 						//System.out.println(cellText);
-						LOGS.info("Cell value: " + cellText);
 						if(cellText.contains(listItem.trim())){
-							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr[" + (rowNum+1) + "]"));
+							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr[" + (rowNum) + "]"));
 							//System.out.println(xpathSubString);
-							LOGS.info("Xpath substring: " + xpathSubString);
 							menuXpath = webTableXpath + xpathSubString;
 							//System.out.println(menuXpath );
-							LOGS.info("Menu xpath: " + menuXpath);
 							try{
 								WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
 								((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
@@ -849,7 +891,8 @@ public class Util extends CSV_Reader{
 	public void clickLink(String objectLocatorType, String locatorValue) throws Exception{
 		if(waitForObject("Link", objectLocatorType, locatorValue) == true){
 			WebElement link = driver.findElement(findObject(objectLocatorType, locatorValue));
-			link.click();
+			((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", link);
+			//link.click();
 		}
 	} 
 	public void clickMenuItem(String objectLocatorType, String locatorValue) throws IOException{
@@ -861,7 +904,7 @@ public class Util extends CSV_Reader{
 	public int getRowNumberOfListItem(String objectLocatorType, String locatorValue, String listItem){
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
-		System.out.println("Total Rows: " + rows.size());
+		//System.out.println("Total Rows: " + rows.size());
 		for (int rowNum=0; rowNum<rows.size(); rowNum++) {
 			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 			//System.out.println("Total Columns: " + columns.size());
@@ -921,7 +964,6 @@ public class Util extends CSV_Reader{
 					if(waitForObject("Radio button", objectLocatorType, radioButtonXpath)==true){
 						radioButton = driver.findElement(By.xpath(radioButtonXpath));
 						((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", radioButton);
-						//radioButton.click();
 					}
 				}catch(Exception e){
 					String xpath = ".//tr/td/label[contains(text(),'" + testData + "')]";
@@ -946,24 +988,33 @@ public class Util extends CSV_Reader{
 		String trimRadioButtonValue = radioButtonValue.trim().toLowerCase().replaceAll("[\\p{C}\\p{Z}]", "");
 		String radioButtonXpath = null;
 		String radioTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table";
-		//System.out.println(radioTableXpath);
 		WebElement table = driver.findElement(findObject(objectLocatorType, radioTableXpath));
 		List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
-		//System.out.println("No. of rows: " + rows.size());
-		for (int rowNum=1; rowNum<rows.size(); rowNum++){
+		int rowNumber = rows.size();
+		//System.out.println("No. of rows: " + rowNumber);
+		if(rowNumber > 1){
+			for (int rowNum=1; rowNum<=rows.size(); rowNum++){
+				List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
+				//System.out.println("No. of columns: " + columns.size()); //print number of columns
+				String columnText = columns.get(0).getText().trim().toLowerCase().replaceAll("[\\p{C}\\p{Z}]", "");
+				//System.out.println("Column #: " + columnText); //print cell data
+				if(columnText.contains(trimRadioButtonValue)){
+					radioButtonXpath = radioTableXpath + "/tbody/tr[" + rowNum + "]/td/input";
+					break;
+				}
+			}
+		}else{
 			List<WebElement> columns  = table.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 			//System.out.println("No. of columns: " + columns.size()); //print number of columns
-			 for (int colNum=0; colNum<=columns.size()-1; colNum++){
+			for (int colNum=0; colNum<=columns.size()-1; colNum++){
 				String columnText = columns.get(colNum).getText().trim().toLowerCase().replaceAll("[\\p{C}\\p{Z}]", "");
 				//System.out.println("Column #: " + colNum + " - " + columnText); //print cell data
 				if(columnText.contains(trimRadioButtonValue)){
 					int correctedColNum =colNum +1;
-					//radioButtonXpath = radioTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
-					radioButtonXpath = radioTableXpath + "/tbody/tr[" + (rowNum+1) + "]/td/input";
+					radioButtonXpath = radioTableXpath + "/tbody/tr/td[" + correctedColNum + "]/input";
 					break;
 				}
 			}
-			//System.out.println(radioButtonXpath);
 		}
 		return radioButtonXpath;
 	}
@@ -1019,9 +1070,9 @@ public class Util extends CSV_Reader{
 	public void verifyTextPresent(String objectLocatorType, String locatorValue, String testData) throws IOException{
 		if(waitForObject("Text", objectLocatorType, locatorValue) == true){
 			String textToVerify = driver.findElement(findObject(objectLocatorType, locatorValue)).getText().trim().toLowerCase().toString().replaceAll(" ", "");
-			System.out.println(textToVerify);
+			//System.out.println(textToVerify);
 			String testDataM = testData.replaceAll("\\s","");
-			System.out.println(testDataM);
+			//System.out.println(testDataM);
 			if(textToVerify.isEmpty()){
 				LOGS.info("Expected text: " +  "\"" + textToVerify + "\""  + " is not displayed");
 				try {
@@ -1162,7 +1213,7 @@ public class Util extends CSV_Reader{
 	        ResultSet res = st.executeQuery(query);
 	        while (res.next()){
 	        	activationCode = res.getString(columnName);
-		        System.out.println(activationCode);
+		        //System.out.println(activationCode);
 	        }
 	        conn.close();
 	        st.close();
@@ -1188,9 +1239,9 @@ public class Util extends CSV_Reader{
    	        Connection conn = DriverManager.getConnection(dbUrl + this.dbName,this.dbUsername,this.dbPassword);
 	        Statement st = conn.createStatement();
 	        ResultSet res = st.executeQuery(query);
-	        while (res.next()){
+	        while(res.next()){
 		        dbValue = res.getString(columnName);
-		        System.out.println(dbValue);
+		        //System.out.println(dbValue);
 	        }
 	        conn.close();
 	        st.close();
@@ -1202,7 +1253,35 @@ public class Util extends CSV_Reader{
         }
         StringSelection stringSelection = new StringSelection(dbValue);
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+        LOGS.info("Database value: " + dbValue);
  		return dbValue;
+	}
+	public List<String> getDbValues(String query) throws Exception, IllegalAccessException{
+		List<String> dbValues = new ArrayList<String>();
+		String dbUrl = "jdbc:mysql://" + ipAddress + ":" + portNumber + "/";
+        String driver = "com.mysql.jdbc.Driver";
+        String columnName = query.substring(6, query.indexOf("from")).trim();
+        try {
+	        Class.forName(driver).newInstance();
+   	        Connection conn = DriverManager.getConnection(dbUrl + this.dbName,this.dbUsername,this.dbPassword);
+	        Statement st = conn.createStatement();
+	        ResultSet res = st.executeQuery(query);
+	        while(res.next()){
+		       dbValues.add(res.getString(columnName));
+		        //System.out.println(dbValue);
+	        }
+	        conn.close();
+	        st.close();
+	        res.close();
+        }catch(ClassNotFoundException e){
+        	e.printStackTrace();
+        }catch(SQLException e){
+        	 e.printStackTrace();
+        }
+        StringSelection stringSelection = new StringSelection(dbValues.toString());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+        LOGS.info("Database values: " + dbValues.toString());
+ 		return dbValues;
 	}
 	public void pasteValueFromClipboard(String objectLocatorType, String locatorValue) throws IOException {
         String clipboardText;
@@ -1446,7 +1525,7 @@ public class Util extends CSV_Reader{
 	}
 
 	public void writeFailedStepToTempResultsFile(String resultFilePath, String[] resultMessage){
-		System.out.println(Arrays.toString(resultMessage));
+		//System.out.println(Arrays.toString(resultMessage));
 		String tempResultFilePath = this.createTempResultsFile(this.currentResultsFolderPath, resultMessage);
 		BufferedWriter writer = null;        
 	    try{
