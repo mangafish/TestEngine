@@ -630,6 +630,10 @@ public class Util extends CSV_Reader{
 					LOGS.info("> Getting value from Database");
 					getDbValue(testData);
 					break;
+				case "getdbvalues":
+					LOGS.info("> Getting value from Database");
+					getDbValues(testData);
+					break;
 				case "pastevaluefromclipboard":
 					LOGS.info("> Pasting value from clipboard");
 					pasteValueFromClipboard(locator_Type, locator_Value);
@@ -844,6 +848,7 @@ public class Util extends CSV_Reader{
 	}
 	public void clickListMenuItem(String objectLocatorType, String locatorValue, String listItem) throws InterruptedException, IOException{
 		String webTableXpath = null;
+		String xpathSubString = null;
 		String menuXpath = null;
 		boolean foundMenuItem = false;
 		webTableXpath =  locatorValue.substring(0, locatorValue.lastIndexOf("table/")) + "table/tbody";
@@ -851,36 +856,57 @@ public class Util extends CSV_Reader{
 		if(waitForObject(listItem, objectLocatorType, locatorValue) == true){
 			WebElement table = driver.findElement(findObject(objectLocatorType, webTableXpath));
 			List<WebElement> rows  = table.findElements(By.tagName("tr")); //find all tags with 'tr' (rows)
-			//System.out.println("Total Rows: " + rows.size()); //print number of rows
-			for (int rowNum=1; rowNum<=rows.size(); rowNum++){
-				//System.out.println("Row No.: " + rowNum);
-				//System.out.println(rows.get(rowNum).getText());
-				if(foundMenuItem==true){break;}else{
-					WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr[" + (rowNum+1) + "]"));
-					List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'tr' (rows)
-					//System.out.println("Total Columns: " + columns.size()); //print number of columns
-					for(int colNum=0; colNum<columns.size(); colNum++){
-						//System.out.println("Row No.: " + rowNum);
-						String cellText = columns.get(colNum).getText().trim();
-						//System.out.println(cellText);
-						if(cellText.contains(listItem.trim())){
-							String xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr[" + (rowNum) + "]"));
-							//System.out.println(xpathSubString);
-							menuXpath = webTableXpath + xpathSubString;
-							//System.out.println(menuXpath );
-							try{
-								WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
-								((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
-								foundMenuItem = true;
-								break;
-							}catch(Exception e){
-								e.printStackTrace();
-								this.setErrorFlag(true);
-						    	LOGS.info(listItem  + " is not displayed or has changed position");
-								this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, listItem + " is not displayed or has changed position."));
-								this.captureScreen(this.currentTestName);
-						    	LOGS.info(e.getMessage());
-						    	this.msgbox("Cannot find: " + listItem + "\n Timeout limit reached.");
+			int numberOfRows = rows.size();
+			if(numberOfRows==1){
+				WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr"));
+				xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr"));
+				List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'tr' (rows)
+				int numberOfColumns = columns.size();
+				for(int colNum=0; colNum<numberOfColumns; colNum++){
+					String cellText = columns.get(colNum).getText().trim();
+					if(cellText.contains(listItem.trim())){
+						xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr"));
+						menuXpath = webTableXpath + xpathSubString;
+						try{
+							WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
+							((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
+							break;
+						}catch(Exception e){
+							e.printStackTrace();
+							this.setErrorFlag(true);
+					    	LOGS.info(listItem  + " is not displayed or has changed position");
+							this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, listItem + " is not displayed or has changed position."));
+							this.captureScreen(this.currentTestName);
+					    	LOGS.info(e.getMessage());
+					    	this.msgbox("Cannot find: " + listItem + "\n Timeout limit reached.");
+						}
+					}
+				}
+			}else{
+				for(int rowNum=1; rowNum<=numberOfRows;rowNum++){
+					if(foundMenuItem==true){break;}else{
+						WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr[" + rowNum + "]"));
+						List<WebElement> columns  = row.findElements(By.tagName("td")); 
+						int numberOfColumns = columns.size();
+						for(int colNum=0; colNum<numberOfColumns; colNum++){
+							String cellText = columns.get(colNum).getText().trim();
+							if(cellText.contains(listItem.trim())){
+								xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/td["));
+								menuXpath = webTableXpath + "/tr[" + rowNum + "]" + xpathSubString;
+								try{
+									WebElement menu =driver.findElement(findObject(objectLocatorType, menuXpath));
+									((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", menu);
+									foundMenuItem = true;
+									break;
+								}catch(Exception e){
+									e.printStackTrace();
+									this.setErrorFlag(true);
+							    	LOGS.info(listItem  + " is not displayed or has changed position");
+									this.writeFailedStepToTempResultsFile(currentResultFilePath, this.reportEvent(this.currentTestName, this.currentTestStepNumber, this.currentTestStepName, listItem + " is not displayed or has changed position."));
+									this.captureScreen(this.currentTestName);
+							    	LOGS.info(e.getMessage());
+							    	this.msgbox("Cannot find: " + listItem + "\n Timeout limit reached.");
+								}
 							}
 						}
 					}
@@ -1270,7 +1296,7 @@ public class Util extends CSV_Reader{
 		       dbValues.add(res.getString(columnName));
 		        //System.out.println(dbValue);
 	        }
-	        conn.close();
+ 	        conn.close();
 	        st.close();
 	        res.close();
         }catch(ClassNotFoundException e){
@@ -1287,7 +1313,7 @@ public class Util extends CSV_Reader{
         String clipboardText;
         Transferable trans = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
         try {
-            if (trans != null && trans.isDataFlavorSupported(DataFlavor.stringFlavor)){
+            if(trans != null && trans.isDataFlavorSupported(DataFlavor.stringFlavor)){
                 clipboardText = (String) trans.getTransferData(DataFlavor.stringFlavor);
                 if(waitForObject("Text box", objectLocatorType, locatorValue) == true){
         			WebElement textBox = driver.findElement(findObject(objectLocatorType, locatorValue));
@@ -1302,7 +1328,6 @@ public class Util extends CSV_Reader{
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
     }
 	public  By findObject(String objectLocatorType, String locatorValue){
 		switch (objectLocatorType.toUpperCase()){
