@@ -560,7 +560,8 @@ public class Util extends CSV_Reader{
 					break;
 				case "selectradiobuttonitem":
 					LOGS.info("> Selecting radio item: " + testData + " in " + objectName);
-					selectRadioButtonItem(locator_Type, locator_Value, testData);
+					//selectRadioButtonItem(locator_Type, locator_Value, testData);
+					clickRadioButtonItem(locator_Type, locator_Value, testData);
 	  				break;
 				case "switchtopopup":
 					LOGS.info("> Switching to popup" );
@@ -678,9 +679,10 @@ public class Util extends CSV_Reader{
 			  objectExists = true;
 		}catch(StaleElementReferenceException ser){
 			System.out.println("Attempting to recover from StaleElementReferenceException");
-	        return  waitForObject(objectName, objectLocatorType, locatorValue);
+	        return waitForObject(objectName, objectLocatorType, locatorValue);
 			//objectExists = false;
-		}catch(NoSuchElementException nse){                         
+		}catch(NoSuchElementException nse){
+			nse.printStackTrace();
 			objectExists = false;
 		}catch(Exception e){
 			e.printStackTrace();
@@ -703,7 +705,8 @@ public class Util extends CSV_Reader{
 			System.out.println("Attempting to recover from StaleElementReferenceException");
 	        return  waitForObject(object);
 			//objectExists = false;
-		}catch(NoSuchElementException nse){                         
+		}catch(NoSuchElementException nse){
+			nse.printStackTrace();
 			objectExists = false;
 		}catch(Exception e){
 			e.printStackTrace();
@@ -746,6 +749,7 @@ public class Util extends CSV_Reader{
 			if(labelText.equals(trimBtnText)){
 				if(waitForObject(label)==true){
 					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
+					break;
 				}
 		  }  
 		} 
@@ -860,7 +864,7 @@ public class Util extends CSV_Reader{
 			if(numberOfRows==1){
 				WebElement row = driver.findElement(findObject(objectLocatorType, webTableXpath + "/tr"));
 				xpathSubString = locatorValue.substring(locatorValue.lastIndexOf("/tr"));
-				List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'tr' (rows)
+				List<WebElement> columns  = row.findElements(By.tagName("td")); //find all tags with 'td' (columns)
 				int numberOfColumns = columns.size();
 				for(int colNum=0; colNum<numberOfColumns; colNum++){
 					String cellText = columns.get(colNum).getText().trim();
@@ -975,6 +979,22 @@ public class Util extends CSV_Reader{
 				}
 			}
 		}
+	}
+	public void clickRadioButtonItem(String objectLocatorType, String locatorValue, String radioButtonLabel) throws IOException, InterruptedException{
+		Thread.sleep(2000);
+		//WebElement radioButton = null;
+		String trimRadioButtonLabel = radioButtonLabel.trim().replaceAll("[\\p{C}\\p{Z}]", "");
+		List<WebElement> labels = driver.findElements(By.tagName("label")); 
+		for(WebElement label:labels){
+			String labelText  = label.getText().trim().replaceAll("[\\p{C}\\p{Z}]", "");
+			//System.out.println(label.getText().trim().replaceAll("[\\p{C}\\p{Z}]", ""));
+			if(labelText.equals(trimRadioButtonLabel)){
+				if(waitForObject(label)==true){
+					((JavascriptExecutor)this.driver).executeScript("arguments[0].click()", label);
+					break;
+				}
+		  }  
+		} 
 	}
 	public void selectRadioButtonItem(String objectLocatorType, String locatorValue, String testData) throws IOException, InterruptedException{
 		Thread.sleep(2000);
@@ -1389,9 +1409,9 @@ public class Util extends CSV_Reader{
 				break;
 			case "headless":
 				driver = new HtmlUnitDriver();
-				((HtmlUnitDriver)driver).setJavascriptEnabled(true);
-				driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-				driver.manage().window().maximize();
+ 				((HtmlUnitDriver)driver).setJavascriptEnabled(true);
+				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+				//driver.manage().window().maximize();
 				LOGS.info("************ Launching headless test ************");
 				break;                     
 			}
