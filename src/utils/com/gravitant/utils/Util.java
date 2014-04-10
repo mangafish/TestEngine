@@ -47,8 +47,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -56,11 +58,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -68,6 +75,47 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Driver;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.BasicAttribute;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import javax.naming.directory.ModificationItem;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
+import javax.net.SocketFactory;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.net.URLConnection;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 
 import javax.swing.JOptionPane;
 
@@ -663,6 +711,10 @@ public class Util extends CSV_Reader{
 					LOGS.info("> Clicking Logo");
 					logout();
 					break;
+				case "changepassword":
+					LOGS.info("> Clicking Logo");
+					changePassword();
+					break;
 			}
 	}
 
@@ -835,6 +887,106 @@ public class Util extends CSV_Reader{
 		  } 
 		} 
 	}
+	public static class DummyTrustmanager implements X509TrustManager {
+		  public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException{
+		    // do nothing
+		  }
+		  public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException{
+		    // do nothing
+		  }
+		  public X509Certificate[] getAcceptedIssuers(){
+		    return new java.security.cert.X509Certificate[0];
+		  }
+	}
+	public static class MySSLSocketFactory extends SSLSocketFactory{
+		  private SSLSocketFactory socketFactory;
+		  public MySSLSocketFactory(){
+		    try {
+		      SSLContext ctx = SSLContext.getInstance("TLS");
+		      ctx.init(null, new TrustManager[]{ new DummyTrustmanager()}, new SecureRandom());
+		      socketFactory = ctx.getSocketFactory();
+		      System.out.println("Socket created");
+		    } catch ( Exception ex ){ 
+		    	ex.printStackTrace(System.err);  
+		    }
+		  }
+		  public static SocketFactory getDefault(){
+			System.out.println("[acquiring the default socket factory]");
+		    return new MySSLSocketFactory();
+		  }
+		  @Override
+		  public String[] getDefaultCipherSuites(){
+		    return socketFactory.getDefaultCipherSuites();
+		  }
+		  @Override
+		  public String[] getSupportedCipherSuites(){
+		    return socketFactory.getSupportedCipherSuites();
+		  }
+		  @Override
+		  public Socket createSocket(Socket socket, String string, int i, boolean bln) throws IOException{
+			  System.out.println("[creating a custom socket (method 2)]");
+		    return socketFactory.createSocket(socket, string, i, bln);
+		  }
+		  @Override
+		  public Socket createSocket(String string, int i) throws IOException, UnknownHostException{
+			  System.out.println("[creating a custom socket (method 3)]");
+		    return socketFactory.createSocket(string, i);
+		  }
+		  @Override
+		  public Socket createSocket(String string, int i, InetAddress ia, int i1) throws IOException, UnknownHostException{
+			  System.out.println("[creating a custom socket (method 4)]");
+		    return socketFactory.createSocket(string, i, ia, i1);
+		  }
+		  @Override
+		  public Socket createSocket(InetAddress ia, int i) throws IOException{
+			  System.out.println("[creating a custom socket (method 5)]");
+		    return socketFactory.createSocket(ia, i);
+		  }
+		  @Override
+		  public Socket createSocket(InetAddress ia, int i, InetAddress ia1, int i1) throws IOException{
+			  System.out.println("[creating a custom socket (method 6)]");
+		    return socketFactory.createSocket(ia, i, ia1, i1);
+		  }
+		}
+	public void changePassword() throws NamingException, NoSuchAlgorithmException, KeyManagementException, IOException, InterruptedException{
+		Properties prop = new Properties();
+		  prop.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+		  prop.put(Context.PROVIDER_URL, "ldaps://qatest1.qa.grav.cm:636/DC=qa10,DC=com");
+		  prop.put(Context.SECURITY_PROTOCOL, "ssl");
+		  prop.put(Context.SECURITY_AUTHENTICATION, "simple");
+		  prop.put(Context.SECURITY_PRINCIPAL, "cn=root, ou=users");
+		  prop.put(Context.SECURITY_CREDENTIALS, "gravitant123#");
+		  prop.put("java.naming.ldap.factory.socket", MySSLSocketFactory.class.getName());
+		  try{
+	         // Create the initial directory context
+	         InitialDirContext initialContext = new InitialDirContext(prop);
+	         DirContext contx = (DirContext)initialContext;
+	         //LdapContext contx = new InitialLdapContext(prop, null); 
+	         System.out.println("Context Sucessfully Initialized");
+	         String oldPassword="Gravitant123";
+	         String newPassword="Gravitant1234";
+	         
+	         ModificationItem[] mods = new ModificationItem[2];
+	         String oldQuotedPassword = "\"" + oldPassword + "\"";
+	         byte[] oldUnicodePassword = oldQuotedPassword.getBytes("UTF-16LE");
+	         String newQuotedPassword = "\"" + newPassword + "\"";
+	         byte[] newUnicodePassword = newQuotedPassword.getBytes("UTF-16LE");
+
+	         mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE,
+	                       new BasicAttribute("unicodePwd", oldUnicodePassword));
+	         mods[1] = new ModificationItem(DirContext.ADD_ATTRIBUTE,
+	                       new BasicAttribute("unicodePwd", newUnicodePassword));
+
+	         String theUserName="CN=" + "ramakanth.manga+4@gravitant.com" + ", OU=users, DC=mygravitant, DC=com";
+	         // Perform the update
+	         contx.modifyAttributes(theUserName, mods);
+	         System.out.println("Changed Password for successfully");
+	         contx.close();   
+		  }
+	      catch(Exception e){
+	         System.err.println(e);
+	      }
+	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
 		WebElement table = driver.findElement(findObject(objectLocatorType, locatorValue));
@@ -982,7 +1134,6 @@ public class Util extends CSV_Reader{
 	}
 	public void clickRadioButtonItem(String objectLocatorType, String locatorValue, String radioButtonLabel) throws IOException, InterruptedException{
 		Thread.sleep(2000);
-		//WebElement radioButton = null;
 		String trimRadioButtonLabel = radioButtonLabel.trim().replaceAll("[\\p{C}\\p{Z}]", "");
 		List<WebElement> labels = driver.findElements(By.tagName("label")); 
 		for(WebElement label:labels){
@@ -1407,13 +1558,22 @@ public class Util extends CSV_Reader{
 				driver.manage().window().maximize();
 				LOGS.info("************ Launching Internet Explorer ************");
 				break;
+			case "safari":
+				//browserPath = "*safari " + this.testEnginePath + "\\Safari_Selenium\\" + "Safari.exe";
+				browserPath = "C:\\Users\\Ramkanth Manga\\Desktop\\TE_1.1\\Safari_Selenium\\Safari.exe";
+				System.setProperty("webdriver.safari.driver", browserPath);
+				System.setProperty("webdriver.safari.noinstall", "true");
+				driver = new SafariDriver();
+				driver.manage().window().maximize();
+				LOGS.info("************ Launching Internet Explorer ************");
+				break;
 			case "headless":
 				driver = new HtmlUnitDriver();
  				((HtmlUnitDriver)driver).setJavascriptEnabled(true);
 				//driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 				//driver.manage().window().maximize();
 				LOGS.info("************ Launching headless test ************");
-				break;                     
+				break;                      
 			}
 			return driver;
 	}

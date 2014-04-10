@@ -1,12 +1,10 @@
 package com.gravitant.test;
 
 import java.util.List;
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.net.URLDecoder;
+ import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,10 +15,29 @@ import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.log4j.Logger;
 
 import au.com.bytecode.opencsv.CSVReader;
+import java.awt.BorderLayout;
+import javax.swing.JFrame;
+import javax.swing.JTextArea;
 
 import com.gravitant.test.RunTests;
 import com.gravitant.utils.CSV_Reader;
 import com.gravitant.utils.Util;
+import java.awt.Toolkit;
+import java.awt.SystemColor;
+import javax.swing.DropMode;
+import javax.swing.UIManager;
+import java.awt.GridLayout;
+import java.awt.Font;
+import java.awt.TextField;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.ColumnSpec;
+import com.jgoodies.forms.layout.RowSpec;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import com.jgoodies.forms.factories.FormFactory;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.JButton;
 
 public class RunTests{
 	public String testEnginePath  = null;
@@ -72,11 +89,37 @@ public class RunTests{
 	public SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
 	public String currentTime = dateFormat.format(cal.getTime()).replaceAll(":","-");
 	public String path =  getClass().getClassLoader().getResource(".").getPath().toString();
+	private static JTextField textField;
 	/******************************************************************************************************/
 
 	public static void main(String[] args) throws Exception{
 		RunTests test = new RunTests(); 
 		test.start();
+		/*JFrame f = new JFrame("A JFrame");
+		f.getContentPane().setBackground(SystemColor.inactiveCaption);
+		f.getContentPane().setLayout(null);
+		
+		JTextArea txtrPathToAutomated = new JTextArea();
+		txtrPathToAutomated.setBackground(SystemColor.inactiveCaption);
+		txtrPathToAutomated.setText("Path to Automated tests");
+		txtrPathToAutomated.setBounds(12, 13, 215, 22);
+		f.getContentPane().add(txtrPathToAutomated);
+		
+		textField = new JTextField();
+		textField.setBounds(346, 13, 116, 22);
+		f.getContentPane().add(textField);
+		textField.setColumns(10);
+		
+		JButton btnBrowse = new JButton("Browse");
+		btnBrowse.setBounds(485, 12, 97, 25);
+		f.getContentPane().add(btnBrowse);
+		f.setFont(new Font("Arial", Font.PLAIN, 11));
+		f.setBackground(SystemColor.desktop);
+		f.setIconImage(Toolkit.getDefaultToolkit().getImage(RunTests.class.getResource("/engine.png")));
+		f.setTitle("Test Engine");
+	      f.setSize(990, 541);
+	      f.setLocation(300,200);
+	      f.setVisible(true);*/
  	}
 	
 	/**
@@ -86,6 +129,7 @@ public class RunTests{
 	 */
 	public void start() throws Exception{
 		Util util = new Util();
+		util.changePassword();
 		//*** Get location of Test_Config.txt file ***//
 		testEnginePath = util.getTestEnginePath();
 		testConfigFilePath  = util.findFile(testEnginePath, "Test_Config.txt");
