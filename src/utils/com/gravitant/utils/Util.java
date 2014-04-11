@@ -88,12 +88,15 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import javax.naming.Context;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.net.SocketFactory;
@@ -115,6 +118,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
 import java.security.cert.X509Certificate;
 
 import javax.swing.JOptionPane;
@@ -713,7 +717,7 @@ public class Util extends CSV_Reader{
 					break;
 				case "changepassword":
 					LOGS.info("> Clicking Logo");
-					changePassword();
+					changePassword(testData);
 					break;
 			}
 	}
@@ -948,43 +952,49 @@ public class Util extends CSV_Reader{
 		    return socketFactory.createSocket(ia, i, ia1, i1);
 		  }
 		}
-	public void changePassword() throws NamingException, NoSuchAlgorithmException, KeyManagementException, IOException, InterruptedException{
+	public void changePassword(String userId) throws NamingException, NoSuchAlgorithmException, KeyManagementException, IOException, InterruptedException{
 		Properties prop = new Properties();
 		  prop.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-		  prop.put(Context.PROVIDER_URL, "ldaps://qatest1.qa.grav.cm:636/DC=qa10,DC=com");
+		  prop.put(Context.PROVIDER_URL, "ldaps://qatest1.qa.grav.cm:636/");
+		  prop.put(Context.REFERRAL, "follow");
 		  prop.put(Context.SECURITY_PROTOCOL, "ssl");
 		  prop.put(Context.SECURITY_AUTHENTICATION, "simple");
-		  prop.put(Context.SECURITY_PRINCIPAL, "cn=root, ou=users");
+		  prop.put(Context.SECURITY_PRINCIPAL, "cn=root");
 		  prop.put(Context.SECURITY_CREDENTIALS, "gravitant123#");
 		  prop.put("java.naming.ldap.factory.socket", MySSLSocketFactory.class.getName());
 		  try{
+			  SearchControls searchControls = new SearchControls();
+			  searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 	         // Create the initial directory context
 	         InitialDirContext initialContext = new InitialDirContext(prop);
 	         DirContext contx = (DirContext)initialContext;
-	         //LdapContext contx = new InitialLdapContext(prop, null); 
 	         System.out.println("Context Sucessfully Initialized");
-	         String oldPassword="Gravitant123";
-	         String newPassword="Gravitant1234";
+	         
+	         NamingEnumeration<SearchResult> results = contx.search("OU=users,DC=qa10,DC=mygravitant,DC=com", "uid=" + userId + "\"" , searchControls);
+	         SearchResult searchResult = null;
+	         if(results.hasMoreElements()) {
+	              searchResult = (SearchResult) results.nextElement();
+	              System.out.println(searchResult);
+	             if(results.hasMoreElements()) {
+	                 System.err.println("Matched multiple users for the accountName: " + "ramakanth.manga@gravitant.com");
+	                 //return null;
+	             }
+	         }
+	         
+	         String oldPassword="Gravitant1234";
+	         String newPassword="Gravitant123";
 	         
 	         ModificationItem[] mods = new ModificationItem[2];
-	         String oldQuotedPassword = "\"" + oldPassword + "\"";
-	         byte[] oldUnicodePassword = oldQuotedPassword.getBytes("UTF-16LE");
-	         String newQuotedPassword = "\"" + newPassword + "\"";
-	         byte[] newUnicodePassword = newQuotedPassword.getBytes("UTF-16LE");
 
-	         mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE,
-	                       new BasicAttribute("unicodePwd", oldUnicodePassword));
-	         mods[1] = new ModificationItem(DirContext.ADD_ATTRIBUTE,
-	                       new BasicAttribute("unicodePwd", newUnicodePassword));
+	         mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("userPassword", oldPassword));
+	         mods[1] = new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("userPassword", newPassword));
 
-	         String theUserName="CN=" + "ramakanth.manga+4@gravitant.com" + ", OU=users, DC=mygravitant, DC=com";
-	         // Perform the update
-	         contx.modifyAttributes(theUserName, mods);
-	         System.out.println("Changed Password for successfully");
+	         String theUserName="uid=" + "ramakanth.manga@gravitant.com" + ", OU=users, DC=qa10, DC=mygravitant, DC=com";
+ 	         contx.modifyAttributes(theUserName, mods);
+	         LOGS.info("Changed Password for user: " +  userId + " successfully");
 	         contx.close();   
-		  }
-	      catch(Exception e){
-	         System.err.println(e);
+		  }catch(Exception e){
+	         e.printStackTrace();
 	      }
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){

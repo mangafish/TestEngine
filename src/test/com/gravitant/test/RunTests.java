@@ -129,7 +129,7 @@ public class RunTests{
 	 */
 	public void start() throws Exception{
 		Util util = new Util();
-		util.changePassword();
+		util.changePassword("ramakanth.manga@gravitant.com");
 		//*** Get location of Test_Config.txt file ***//
 		testEnginePath = util.getTestEnginePath();
 		testConfigFilePath  = util.findFile(testEnginePath, "Test_Config.txt");
