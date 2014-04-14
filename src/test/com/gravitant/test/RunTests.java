@@ -129,7 +129,6 @@ public class RunTests{
 	 */
 	public void start() throws Exception{
 		Util util = new Util();
-		util.changePassword("ramakanth.manga@gravitant.com");
 		//*** Get location of Test_Config.txt file ***//
 		testEnginePath = util.getTestEnginePath();
 		testConfigFilePath  = util.findFile(testEnginePath, "Test_Config.txt");
@@ -145,6 +144,7 @@ public class RunTests{
 		dbName = util.getTestConfigProperty("Db Name");
 		dbUsername = util.getTestConfigProperty("Db Username");
 		dbPassword = util.getTestConfigProperty("Db Password");
+		//util.changePassword("(gravitant123#,cm-mm-admin@gravitant.com,Gravitant1234,Gravitant123)");
 		//******* Set log file location ****************//
 		System.setProperty("TestEngineLog", testEnginePath + "\\TestEngineLog\\TestEngineLog.log");
 		//System.out.println(System.getProperty("TestEngineLog"));

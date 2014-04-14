@@ -171,6 +171,8 @@ public class Util extends CSV_Reader{
     private String dbUsername = null;
     private String dbPassword = null;
     private String environment = null;
+    private String browserType = null;
+    private String closeBrowser = null;
     int currentTestStepNumber = 0;
     int currentTestStepRow;
     int totalTestNumber = 0;
@@ -319,7 +321,42 @@ public class Util extends CSV_Reader{
 	    }
 		//System.out.println(propertyValue);
 	    readTestConfigFile.close();
+	    this.setTestConfigProperty(property, propertyValue);
 		return propertyValue;
+	}
+	public void setTestConfigProperty(String property, String propertyValue) throws IOException{
+		switch (property){
+			case "environment":
+				this.environment = 	propertyValue;
+				break;
+			case "browserType":
+				this.browserType = 	propertyValue;
+				break;
+			case "automatedTestsFolderPath":
+				this.automatedTestsFolderPath = propertyValue;
+				break;
+			case "globalWaitTime":
+				this.globalWaitTime = Integer.parseInt(propertyValue);
+				break;
+			case "closeBrowser":
+				this.closeBrowser = propertyValue;
+				break;
+			case "ipAddress":
+				this.ipAddress = propertyValue;
+				break;
+			case "portNumber":
+				this.portNumber = propertyValue;
+				break;
+			case "dbName":
+				this.dbName = propertyValue;
+				break;
+			case "dbUsername":
+				this.dbUsername = propertyValue;
+				break;
+			case "dbPassword":
+				this.dbPassword = propertyValue;
+				break;
+		}
 	}
 	/**Method gets the list of all tests specified in
 	 * Tests_To_Run.txt
@@ -952,50 +989,44 @@ public class Util extends CSV_Reader{
 		    return socketFactory.createSocket(ia, i, ia1, i1);
 		  }
 		}
-	public void changePassword(String userId) throws NamingException, NoSuchAlgorithmException, KeyManagementException, IOException, InterruptedException{
+	public void changePassword(String testData)throws NamingException, NoSuchAlgorithmException, KeyManagementException, IOException, InterruptedException{
+		String cleanTestData = testData.replaceAll("[()]","");
+		String[] data = cleanTestData.split(",");
+		String adminPassword = data[0];
+		String userId = data[1];
+		String oldPassword = data[2];
+		String newPassword = data[3];
+		String url = this.environment.substring(8);
 		Properties prop = new Properties();
-		  prop.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-		  prop.put(Context.PROVIDER_URL, "ldaps://qatest1.qa.grav.cm:636/");
-		  prop.put(Context.REFERRAL, "follow");
-		  prop.put(Context.SECURITY_PROTOCOL, "ssl");
-		  prop.put(Context.SECURITY_AUTHENTICATION, "simple");
-		  prop.put(Context.SECURITY_PRINCIPAL, "cn=root");
-		  prop.put(Context.SECURITY_CREDENTIALS, "gravitant123#");
-		  prop.put("java.naming.ldap.factory.socket", MySSLSocketFactory.class.getName());
-		  try{
-			  SearchControls searchControls = new SearchControls();
-			  searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-	         // Create the initial directory context
-	         InitialDirContext initialContext = new InitialDirContext(prop);
-	         DirContext contx = (DirContext)initialContext;
-	         System.out.println("Context Sucessfully Initialized");
+		prop.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+		prop.put(Context.PROVIDER_URL, "ldaps://" + url + ":636/");
+		prop.put(Context.REFERRAL, "follow");
+		prop.put(Context.SECURITY_PROTOCOL, "ssl");
+		prop.put(Context.SECURITY_AUTHENTICATION, "simple");
+		prop.put(Context.SECURITY_PRINCIPAL, "cn=root");
+		prop.put(Context.SECURITY_CREDENTIALS, adminPassword);
+		prop.put("java.naming.ldap.factory.socket", MySSLSocketFactory.class.getName());
+		try{
+		  SearchControls searchControls = new SearchControls();
+		  searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+	      InitialDirContext initialContext = new InitialDirContext(prop); // Create the initial directory context
+	      DirContext contx = (DirContext)initialContext;
 	         
-	         NamingEnumeration<SearchResult> results = contx.search("OU=users,DC=qa10,DC=mygravitant,DC=com", "uid=" + userId + "\"" , searchControls);
-	         SearchResult searchResult = null;
-	         if(results.hasMoreElements()) {
-	              searchResult = (SearchResult) results.nextElement();
-	              System.out.println(searchResult);
-	             if(results.hasMoreElements()) {
-	                 System.err.println("Matched multiple users for the accountName: " + "ramakanth.manga@gravitant.com");
-	                 //return null;
-	             }
-	         }
-	         
-	         String oldPassword="Gravitant1234";
-	         String newPassword="Gravitant123";
-	         
-	         ModificationItem[] mods = new ModificationItem[2];
+	      if(userId.contains("cm-mm-admin") || newPassword.length()<1){
+	    	  LOGS.warn("Sorry, cannot change password for Market Maker and/or new password cannot be empty");
+	      }else{
+	    	  ModificationItem[] mods = new ModificationItem[2];
+		      mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("userPassword", oldPassword));
+		      mods[1] = new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("userPassword", newPassword));
 
-	         mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("userPassword", oldPassword));
-	         mods[1] = new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("userPassword", newPassword));
-
-	         String theUserName="uid=" + "ramakanth.manga@gravitant.com" + ", OU=users, DC=qa10, DC=mygravitant, DC=com";
- 	         contx.modifyAttributes(theUserName, mods);
-	         LOGS.info("Changed Password for user: " +  userId + " successfully");
-	         contx.close();   
-		  }catch(Exception e){
-	         e.printStackTrace();
+		      String theUserName="uid=" + userId + ", OU=users, DC=qa10, DC=mygravitant, DC=com";
+	 	      contx.modifyAttributes(theUserName, mods);
+		      LOGS.info("Changed Password for user: " +  userId + " successfully");
+		      contx.close();
 	      }
+		}catch(Exception e){
+	       e.printStackTrace();
+	    }
 	}
 	public String getCellData(String objectLocatorType, String locatorValue){
 		String cellData = null;
