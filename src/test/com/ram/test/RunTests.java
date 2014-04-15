@@ -1,10 +1,10 @@
-package com.gravitant.test;
+package com.ram.test;
 
 import java.util.List;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
- import java.net.URLDecoder;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,26 +15,29 @@ import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.log4j.Logger;
 
 import au.com.bytecode.opencsv.CSVReader;
+
 import java.awt.BorderLayout;
+
 import javax.swing.JFrame;
 import javax.swing.JTextArea;
 
-import com.gravitant.test.RunTests;
-import com.gravitant.utils.CSV_Reader;
-import com.gravitant.utils.Util;
 import java.awt.Toolkit;
 import java.awt.SystemColor;
+
 import javax.swing.DropMode;
 import javax.swing.UIManager;
+
 import java.awt.GridLayout;
 import java.awt.Font;
 import java.awt.TextField;
-import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.forms.layout.ColumnSpec;
-import com.jgoodies.forms.layout.RowSpec;
+
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import com.jgoodies.forms.factories.FormFactory;
+
+import com.ram.test.RunTests;
+import com.ram.utils.CSV_Reader;
+import com.ram.utils.Util;
+
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.JButton;
@@ -274,7 +277,7 @@ public class RunTests{
 						    action = testStepRow[4];
 				        	util.setCurrentTestStep(testStep);
 				        	util.setCurrentTestStepNumber(testStepNumber);
-						    testData = util.getTestData(testStepObjectName);
+						    this.testData = util.getTestData(testStepObjectName);
 						    util.executeAction(testStepPageName, testStepObjectName, action, testData);
 						    if(util.errorFlag==true){break;}
 				    	}
