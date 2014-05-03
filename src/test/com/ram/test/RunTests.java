@@ -98,32 +98,7 @@ public class RunTests{
 	public static void main(String[] args) throws Exception{
 		RunTests test = new RunTests(); 
 		test.start();
-		/*JFrame f = new JFrame("A JFrame");
-		f.getContentPane().setBackground(SystemColor.inactiveCaption);
-		f.getContentPane().setLayout(null);
-		
-		JTextArea txtrPathToAutomated = new JTextArea();
-		txtrPathToAutomated.setBackground(SystemColor.inactiveCaption);
-		txtrPathToAutomated.setText("Path to Automated tests");
-		txtrPathToAutomated.setBounds(12, 13, 215, 22);
-		f.getContentPane().add(txtrPathToAutomated);
-		
-		textField = new JTextField();
-		textField.setBounds(346, 13, 116, 22);
-		f.getContentPane().add(textField);
-		textField.setColumns(10);
-		
-		JButton btnBrowse = new JButton("Browse");
-		btnBrowse.setBounds(485, 12, 97, 25);
-		f.getContentPane().add(btnBrowse);
-		f.setFont(new Font("Arial", Font.PLAIN, 11));
-		f.setBackground(SystemColor.desktop);
-		f.setIconImage(Toolkit.getDefaultToolkit().getImage(RunTests.class.getResource("/engine.png")));
-		f.setTitle("Test Engine");
-	      f.setSize(990, 541);
-	      f.setLocation(300,200);
-	      f.setVisible(true);*/
- 	}
+	}
 	
 	/**
 	 * Method reads the TestsToRun text file and kicks off tests mentioned in the file
